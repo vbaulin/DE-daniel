@@ -1,5 +1,7 @@
 # Research Discovery Engine (IntelliDE)
 
+[![DOI](https://zenodo.org/badge/948595787.svg)](https://doi.org/10.5281/zenodo.15084931)
+
 ## Transforming Scientific Research Through AI-Powered Knowledge Discovery
 
 IntelliDE is an advanced platform that uses artificial intelligence to accelerate scientific discovery, foster interdisciplinary collaboration, and democratize access to knowledge.
