@@ -1,0 +1,181 @@
+# 3. Architecture
+
+## 3.1 System Overview
+
+The **Discovery Engine (DE)** is a modular, multi-layered system that transforms raw scientific publications into a structured, interactive, and computable knowledge environment. The architecture supports:
+
+- Automated extraction of structured knowledge from unstructured documents
+- Encoding of that knowledge into formal, multidimensional representations
+- Projection into interpretable views for both humans and AI agents
+- Interactive synthesis, navigation, and hypothesis generation
+
+The system operates as a **knowledge transformation pipeline**, centred around the Conceptual Nexus Model (CNM).
+
+---
+
+## 3.2 Architectural Layers
+
+The DE architecture can be understood in five primary layers:
+
+### L1. Ingestion & Preprocessing
+
+| Module                | Description                                                            |
+|-----------------------|------------------------------------------------------------------------|
+| **Document Parser**   | Handles input formats (PDFs, LaTeX, HTML, etc.)                        |
+| **Preprocessor**      | Strips boilerplate, extracts metadata, segments content                |
+| **Corpus Manager**    | Indexes documents, manages versioning, metadata tagging                |
+
+### L2. Structured Distillation
+
+| Module                 | Description                                                            |
+|------------------------|------------------------------------------------------------------------|
+| **Distillation Engine**| Uses LLMs guided by adaptive templates to extract structured data      |
+| **Template System**    | Modular schema (in Markdown or JSON) with domain-specific probes       |
+| **Justification Layer**| Links each extracted claim to source evidence for traceability         |
+
+Outputs:
+- **Knowledge Artifacts** (parameterised, structured scientific claims)
+- **Entity Types** (concepts, methods, systems, materials, mechanisms, etc.)
+- **Relations** (causal, compositional, evidential, taxonomic)
+
+### L3. Representation Layer
+
+| Component             | Role                                                                     |
+|------------------------|--------------------------------------------------------------------------|
+| **Conceptual Tensor (TCNM)** | High-dimensional tensor encoding relationships among all artifacts |
+| **Graph Builder**     | Constructs CNM as an explicit knowledge graph                            |
+| **Embedding Engine**  | Derives semantic vector representations for similarity & clustering      |
+
+Representations:
+- **Tensor View (TCNM)**: Primary substrate for computation and reasoning
+- **CNM Graph View**: Human-interpretable graph of nodes + edges
+- **Semantic Spaces**: Vector embeddings for soft similarity & analogy detection
+
+### L4. Synthesis & Analysis
+
+| Module                      | Description                                                             |
+|-----------------------------|-------------------------------------------------------------------------|
+| **Entity Resolver**         | Aligns semantically equivalent nodes across publications                |
+| **Aggregator**              | Merges, compares, or flags contradictions across artifacts               |
+| **Gap & Conflict Detector** | Identifies missing links, parameter voids, and thematic inconsistencies  |
+| **Topology Mapper**         | Builds thematic clusters, motifs, and temporal maps of field evolution   |
+
+### L5. Interaction & Generation
+
+| Interface or Agent          | Role                                                                   |
+|-----------------------------|-------------------------------------------------------------------------|
+| **Human UI (Graph Browser)**| Explore, filter, and traverse CNM graph                                 |
+| **Query Console**           | Text or structured queries resolved via graph/tensor operations         |
+| **AI Agents**               | Perform synthesis, analogy, and generative hypothesis creation          |
+| **Concept Designer**        | Interactive UI for composing and validating new hypotheses              |
+
+---
+
+## 3.3 Data Flow Summary
+
+```plaintext
++--------------------+
+| Scientific Documents |
++--------------------+
+         ↓
+[Ingestion & Preprocessing]
+         ↓
+[LLM Distillation + Template Extraction]
+         ↓
+[Structured Knowledge Artifacts]
+         ↓
+[Graph Builder] ⇄ [Tensor Encoder] ⇄ [Embedding Engine]
+         ↓
+     Conceptual Nexus Model (CNM)
+         ↓
+[Graph View] ↔ [Vector Space] ↔ [AI Agents]
+         ↓
+[Human Interfaces + Generative Design Tools]
+```
+
+---
+
+## 3.4 Core Data Structures
+
+### Knowledge Artifact
+
+- **Type**: `Artifact`
+- **Fields**: 
+  - `concept`, `method`, `parameter`, `result`, `assumption`, `source_ref`
+- **Attributes**:
+  - `verifiability_score`, `robustness`, `semantic_role`, `linkage_id`
+
+### Conceptual Nexus Tensor (TCNM)
+
+- **Shape**: High-dimensional tensor (N modes)
+- **Mode Examples**:
+  - Concept Types
+  - Relationship Types
+  - Parameter Bins
+  - Temporal Epoch
+  - Provenance Cluster
+
+### CNM Graph
+
+- **Node Types**:
+  - `Concept`, `Method`, `Mechanism`, `Parameter`, `System`, `Publication`
+- **Edge Types**:
+  - `USES`, `CAUSED_BY`, `EVIDENCE_FOR`, `SIMILAR_TO`, `CONFLICTS_WITH`
+
+---
+
+## 3.5 Agent Operating Context
+
+Agents in the Discovery Engine don’t operate on raw text — they act on **structured data representations**:
+
+| Input Type               | Purpose                                        |
+|--------------------------|------------------------------------------------|
+| Graph Subgraphs          | For traversal and relation-based reasoning     |
+| Tensor Slices            | For analogue detection, inference, completion  |
+| Embedding Clusters       | For soft similarity and concept space queries  |
+| Provenance Chains        | For trust validation and traceable design      |
+
+Agents use operations like:
+
+- Tensor contraction
+- Graph walk heuristics
+- Semantic nearest-neighbour search
+- Schema-constrained generation
+
+---
+
+## 3.6 System Properties
+
+| Property                  | Design Strategy                                                           |
+|---------------------------|----------------------------------------------------------------------------|
+| **Modularity**            | Clean layer separation: ingest → extract → encode → interact              |
+| **Explainability**        | All AI outputs traceable to graph nodes and source justifications         |
+| **Scalability**           | Batch extraction, parallel graph ops, vector compression                  |
+| **Domain Extensibility**  | Template schema is modular and field-specific                             |
+| **Auditability**          | All knowledge artifacts linked to source text fragments                   |
+
+---
+
+> ☑️ Visual prompt for napkin.ai:
+> 
+> **Title**: “Discovery Engine System Architecture”
+> 
+> - Vertical pipeline with 5 layers:
+>     - Ingest
+>     - Distill
+>     - Represent
+>     - Synthesize
+>     - Interact
+> 
+> - Central component: “Conceptual Nexus Model (TCNM)”
+>     - Connects to:
+>         - “CNM Graph View” (for human navigation)
+>         - “Semantic Embedding Space” (for AI inference)
+>         - “AI Agents” (for exploration & generation)
+> 
+> - Arrows from "Scientific Documents" into the pipeline
+> - Optional icons:
+>     - Gears ⚙️ for modules
+>     - Graph nodes 🔗
+>     - Tensors 🧮
+>     - UI panels 🖥
