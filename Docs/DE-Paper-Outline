@@ -1,0 +1,185 @@
+# Discovery Engine: System Design Document
+
+**Authors**: Vladimir Baulin et al.  
+**Date**: 26 May 2025  
+**Affiliations**: Active Inference Institute, Universitat Rovira i Virgili  
+**ArXiv**: [2505.17500v1](https://arxiv.org/abs/2505.17500v1)
+
+---
+
+## 1. Overview
+
+The **Discovery Engine (DE)** is a computational framework for transforming the fragmented corpus of scientific publications into a **structured, machine-operable knowledge system**. It achieves this by using LLM-guided distillation to extract verifiable knowledge artifacts from literature and encode them into a **Conceptual Nexus Model (CNM)** — a computable, high-dimensional tensor representation of a scientific domain.
+
+This document outlines the architecture, core components, and design rationale behind the Discovery Engine.
+
+---
+
+## 2. Motivation
+
+Scientific literature has scaled beyond the point of manual assimilation. Current challenges include:
+
+- Information overload and siloed findings
+- Poor reproducibility and growing retraction rates
+- A document-centric format ill-suited to machine learning or reasoning
+
+The DE reimagines literature not as a static archive but as a **dynamic, explorable knowledge graph**, structured for both human and AI interaction.
+
+---
+
+## 3. Architecture
+
+### 3.1 System Components
+
+| Component               | Function                                                                 |
+|-------------------------|--------------------------------------------------------------------------|
+| **Distillation Engine** | LLMs extract structured knowledge artifacts using adaptive templates     |
+| **Template Schema**     | Field-specific, self-refining schema based on formal conceptual mappings |
+| **Conceptual Tensor**   | High-dimensional tensor encoding relationships among concepts            |
+| **CNM Graph View**      | Human-readable knowledge graph projection from the tensor                |
+| **AI Agent Layer**      | Performs reasoning, navigation, and hypothesis generation                |
+| **Synthesis Engine**    | Integrates, aligns, and resolves entity relationships across literature  |
+
+### 3.2 Data Flow
+
+1. Input: Raw scientific documents (e.g. PDFs, preprints)
+2. Distillation via adaptive template
+3. Extraction of knowledge artifacts (structured JSON-like objects)
+4. Encoding into Conceptual Tensor (TCNM)
+5. Projection into graph and vector space views
+6. AI agent interaction and downstream analytics
+
+---
+
+## 4. Key Concepts
+
+### 4.1 Knowledge Artifact
+
+A structured unit of distilled information extracted from literature. Includes:
+
+- Concepts and hypotheses
+- Methodological details and parameters
+- Results and findings
+- Linked source provenance
+
+### 4.2 Conceptual Nexus Model (CNM)
+
+A hybrid representation comprising:
+
+- **Knowledge Graph**: Nodes (entities, methods, systems) and edges (causal, evidence-based links)
+- **Vector Embeddings**: Semantic similarity layers using VSA/HDC techniques
+- **Tensor Encoding (TCNM)**: Core computational substrate
+
+---
+
+## 5. Template System
+
+### 5.1 Structure
+
+Templates are defined in Markdown and modularised:
+
+- M0: Metadata
+- M1: Core Claims
+- M2: Systems & Entities
+- M3: Parameters
+- M4: Mechanisms
+- M5: Observations
+- M6: Limitations
+
+### 5.2 Self-Refining Feedback Loop
+
+Templates evolve through corpus-aligned feedback:
+
+- LLMs flag missing or mismatched schema fields
+- Meta-analysis identifies recurring gaps
+- Schema is updated to increase coverage and fidelity
+
+Inspired by: iterative refinement (ML), self-consistent field theory (physics), and co-design with domain experts.
+
+---
+
+## 6. FAIR Principles
+
+The CNM is designed around **FAIR compliance**:
+
+| Principle       | Implementation                                                         |
+|----------------|-------------------------------------------------------------------------|
+| Findable        | Rich metadata and searchable graph interface                           |
+| Accessible      | Structured JSON, API, and UI-based access                              |
+| Interoperable   | Standardised ontologies and concept schemas                            |
+| Reusable        | Provenance-linked, granular, composable components                     |
+
+---
+
+## 7. AI Integration
+
+AI agents operate directly on the CNM structure using:
+
+- Graph traversal
+- Vector search and analogy mapping
+- Tensor completion (e.g. knowledge inference)
+- Hypothesis generation and simulation design
+
+Agents are capable of:
+
+- Detecting gaps, contradictions, and analogies
+- Generating structured hypotheses with CNM alignment
+- Producing new Knowledge Artifacts
+
+---
+
+## 8. Knowledge Synthesis Pipeline
+
+1. **Entity Alignment**: Semantic, structural, and identifier resolution
+2. **Integration**: Aggregation, conflict marking, statistical synthesis
+3. **Dynamic Views**:
+   - Thematic clustering (e.g. BERTopic)
+   - Graph centrality analysis
+   - Parameter correlation landscapes
+
+---
+
+## 9. Use Cases
+
+### 9.1 Case Study: Intelligent Soft Matter
+
+- Domain: Responsive materials with embedded intelligence
+- Outcome: Synthesised CNM of current field, knowledge gaps, and future roadmap
+- Collaborative perspective generated using DE + domain experts
+
+### 9.2 Case Study: DE Platform Design
+
+- Meta-application: DE used to design itself
+- Input corpus: HCI, explainable AI, knowledge graph interaction
+- Result: DE frontend architecture, user modules, UI schema (React + TypeScript)
+
+---
+
+## 10. Limitations
+
+| Limitation                 | Mitigation Strategy                                           |
+|---------------------------|---------------------------------------------------------------|
+| LLM hallucinations         | Evidence-linked extraction and human review                   |
+| Template drift             | Feedback-driven refinement with convergence monitoring        |
+| Semantic nuance loss       | Expansion of schema depth and formalism (e.g. Category Theory)|
+| Computational scalability  | Modular processing, vector compression, distributed pipelines |
+
+---
+
+## 11. Vision
+
+The Discovery Engine aims to:
+
+- Serve as an AI-readable **World Model** of science
+- Shift from document-centric to **knowledge-centric** scientific infrastructure
+- Support rational discovery loops: *Observe → Integrate → Hypothesise → Test*
+- Enhance research navigation, creativity, and reproducibility
+
+The ultimate goal is not just a better search engine — but a **genuine engine of discovery**.
+
+---
+
+## 12. References
+
+[See original paper’s reference list]
+[The Discovery Engine: A Framework for AI-Driven Synthesis and Navigation of Scientific Knowledge Landscapes](https://arxiv.org/abs/2505.17500)
