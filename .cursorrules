@@ -1,0 +1,198 @@
+# Research Discovery Engine - Cursor AI Rules
+
+## Project Standards & Coding Guidelines
+
+### Core Principles
+- **Professional**: Write production-ready, maintainable code
+- **Functional**: Focus on clean functions and immutable patterns where appropriate
+- **Intelligent**: Make thoughtful architectural decisions
+- **Wise**: Consider long-term implications and scalability
+- **Modular**: Create reusable, well-encapsulated components
+- **Concise**: Write clear, efficient code without verbosity
+- **Elegant**: Prioritize readable, beautiful code structure
+- **Thoughtful**: Consider edge cases, performance, and user experience
+- **Clearly-commented**: Document complex logic and business rules
+- **Interpretable**: Make code self-documenting with clear naming
+
+### Technology Stack Standards
+
+#### TypeScript
+- Use strict TypeScript configuration
+- Prefer explicit typing over `any`
+- Create comprehensive interfaces and types
+- Use generic types for reusable components
+- Document complex type definitions
+
+#### React Best Practices
+- Use functional components with hooks
+- Implement proper memoization with `useMemo`, `useCallback`
+- Create custom hooks for shared logic
+- Use proper error boundaries
+- Implement lazy loading for large components
+- Follow React 18+ patterns and concurrent features
+
+#### File Organization
+```
+src/
+  components/          # React components
+    [Feature]/         # Feature-based grouping
+      index.ts        # Barrel exports
+      Component.tsx   # Main component
+      Component.test.tsx
+      types.ts        # Component-specific types
+  hooks/              # Custom React hooks
+  services/           # Business logic and API calls
+  utils/              # Pure utility functions
+  types/              # Global TypeScript definitions
+  constants/          # Application constants
+```
+
+#### Naming Conventions
+- **Components**: PascalCase (e.g., `GraphVisualization`)
+- **Files**: PascalCase for components, camelCase for utilities
+- **Variables/Functions**: camelCase (e.g., `handleNodeSelection`)
+- **Constants**: SCREAMING_SNAKE_CASE (e.g., `DEFAULT_GRAPH_CONFIG`)
+- **Types/Interfaces**: PascalCase (e.g., `NodeObject`, `GraphData`)
+- **Hooks**: camelCase with "use" prefix (e.g., `useGraphData`)
+
+#### Code Structure Standards
+
+##### Component Structure
+```typescript
+// 1. Imports (external, internal, types)
+// 2. Types/Interfaces (component-specific)
+// 3. Constants (component-specific)
+// 4. Component definition
+// 5. Default export
+
+interface ComponentProps {
+  // Props with JSDoc comments
+}
+
+/**
+ * Component description
+ * @param props - Component props
+ * @returns JSX element
+ */
+const Component: React.FC<ComponentProps> = ({
+  prop1,
+  prop2
+}) => {
+  // 1. State declarations
+  // 2. Custom hooks
+  // 3. Effect hooks
+  // 4. Event handlers
+  // 5. Computed values
+  // 6. Render logic
+};
+```
+
+##### Function Documentation
+```typescript
+/**
+ * Function description explaining purpose
+ * @param param1 - Parameter description
+ * @param param2 - Parameter description
+ * @returns Return value description
+ * @example
+ * const result = functionName(arg1, arg2);
+ */
+```
+
+### Code Quality Standards
+
+#### Error Handling
+- Implement proper error boundaries
+- Use try-catch for async operations
+- Provide meaningful error messages
+- Log errors appropriately for debugging
+
+#### Performance
+- Use React.memo for expensive components
+- Implement proper dependency arrays in hooks
+- Avoid unnecessary re-renders
+- Use lazy loading for large datasets
+
+#### Testing
+- Write unit tests for utility functions
+- Create component tests for critical interactions
+- Test custom hooks thoroughly
+- Maintain good test coverage
+
+#### Accessibility
+- Use semantic HTML elements
+- Implement proper ARIA attributes
+- Ensure keyboard navigation
+- Maintain color contrast standards
+
+### Git Commit Standards
+- Use conventional commits format
+- Types: feat, fix, docs, style, refactor, test, chore
+- Format: `type(scope): description`
+- Example: `feat(graph): add node filtering functionality`
+
+### Documentation Requirements
+- Every public function must have JSDoc comments
+- Complex algorithms need explanation comments
+- README files for major features
+- Type definitions with descriptions
+- Example usage in documentation
+
+### Architecture Guidelines
+
+#### State Management
+- Use local state for component-specific data
+- Custom hooks for shared state logic
+- Consider state management libraries for complex state
+- Minimize prop drilling with context when appropriate
+
+#### API Integration
+- Create service layers for external API calls
+- Implement proper error handling and retry logic
+- Use TypeScript for API response typing
+- Handle loading and error states consistently
+
+#### Performance Considerations
+- Bundle optimization with code splitting
+- Image optimization and lazy loading
+- Debounce user input for search/filter operations
+- Virtualization for large lists/graphs
+
+### Security Guidelines
+- Sanitize user inputs
+- Validate data at boundaries
+- Use secure dependencies
+- Follow OWASP guidelines for web security
+
+### Knowledge Graph Specific Standards
+
+#### Node Processing
+- Validate node data structure on creation
+- Implement consistent ID generation
+- Handle missing or malformed data gracefully
+- Maintain referential integrity in graph connections
+
+#### Markdown Processing
+- Sanitize markdown content before rendering
+- Handle malformed markdown gracefully
+- Implement consistent link resolution
+- Validate cross-references between documents
+
+#### Graph Visualization
+- Optimize rendering performance for large graphs
+- Implement proper zoom and pan controls
+- Handle node selection and highlighting consistently
+- Provide accessible alternatives for visual information
+
+### Code Review Checklist
+- [ ] Follows naming conventions
+- [ ] Includes proper TypeScript typing
+- [ ] Has comprehensive JSDoc comments
+- [ ] Implements error handling
+- [ ] Includes relevant tests
+- [ ] Follows component structure standards
+- [ ] Optimized for performance
+- [ ] Accessible and responsive design
+- [ ] Consistent with existing codebase patterns
+
+Remember: Code should tell a story. Make it readable, maintainable, and a joy to work with. 
