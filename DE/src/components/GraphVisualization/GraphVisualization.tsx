@@ -1,5 +1,5 @@
 // src/components/GraphVisualization/GraphVisualization.tsx
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import ForceGraph3D, { NodeObject as FGNodeObject, LinkObject as FGLinkObject } from '3d-force-graph';
 import SpriteText from 'three-spritetext';
 import * as THREE from 'three';
@@ -7,6 +7,7 @@ import * as d3 from 'd3';
 import { cloneDeep } from 'lodash';
 import { GraphData, NodeObject, LinkObject as CNMLinkObject, ConceptDesignState, NodeType, EdgeType } from '../../types';
 import { getNeighbors } from '../../utils/graphUtils';
+import { useStableMemo, useStableCallback, useDebouncedValue, useThrottle } from '../../utils/performanceUtils';
 
 interface GraphNode extends FGNodeObject, NodeObject {}
 interface GraphLink extends FGLinkObject {
