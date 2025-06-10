@@ -123,6 +123,12 @@ export class AgentService {
       case 'package-knowledge-artifact':
         return this.handlePackageArtifact(conceptState);
         
+      case 'deliver-protocol':
+        return this.handleDeliverProtocol(payload, conceptState);
+        
+      case 'deliver-summary':
+        return this.handleDeliverSummary(payload, conceptState);
+        
       default:
         return this.handleGenericAction(action, payload);
     }
@@ -335,6 +341,54 @@ export class AgentService {
         sourceAgent: 'Orchestration Agent',
         type: 'info',
         content: `Packaging Knowledge Artifact for '${conceptId}'...`
+      }
+    };
+  }
+
+  /**
+   * Handle protocol delivery - generates and delivers the actual protocol
+   */
+  private handleDeliverProtocol(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
+    const conceptId = payload?.conceptId || conceptState?.objective || conceptState?.id || 'current concept';
+    
+    return {
+      message: {
+        sourceAgent: 'Protocol Agent',
+        type: 'info',
+        content: `Protocol generation complete for '${conceptId}'. Protocol outline has been generated and is ready for use.`,
+        action: {
+          type: 'view-details',
+          label: 'View Protocol',
+          payload: {
+            protocolGenerated: true,
+            conceptId,
+            materials: payload?.materials || conceptState?.components?.materials || [],
+            mechanisms: payload?.mechanisms || conceptState?.components?.mechanisms || []
+          }
+        }
+      }
+    };
+  }
+
+  /**
+   * Handle summary delivery - generates and delivers the actual summary
+   */
+  private handleDeliverSummary(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
+    const conceptId = conceptState?.objective || conceptState?.id || 'current concept';
+    
+    return {
+      message: {
+        sourceAgent: 'ConceptAgent',
+        type: 'info',
+        content: `Concept summary generated for '${conceptId}'. Summary includes component analysis, technical specifications, and recommendations.`,
+        action: {
+          type: 'view-details',
+          label: 'View Summary',
+          payload: {
+            summaryGenerated: true,
+            conceptState: payload?.conceptState || conceptState
+          }
+        }
       }
     };
   }

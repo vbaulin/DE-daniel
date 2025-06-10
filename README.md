@@ -71,7 +71,7 @@ Modern web browser with WebGL support
 git clone https://github.com/yourusername/Research-Discovery-Engine.git
 cd Research-Discovery-Engine
 
-# Navigate to the application directory
+# IMPORTANT: Navigate to the application directory
 cd DE
 
 # Install dependencies
@@ -81,7 +81,23 @@ npm install
 npm run dev
 ```
 
+**Note**: The application files are located in the `DE/` directory. All npm commands must be run from within this directory.
+
 The application will be available at `http://localhost:5173`
+
+### Alternative: Automated Startup
+For a streamlined startup experience with automatic system checks and dependency installation:
+
+```bash
+# From the DE directory
+python3 main.py
+```
+
+This script will automatically:
+- Check system requirements (Node.js, npm, Python)
+- Install dependencies if needed  
+- Start the development server
+- Open the application in your browser
 
 ### Basic Usage
 1. **Explore Mode**: Navigate the 3D knowledge graph using mouse controls

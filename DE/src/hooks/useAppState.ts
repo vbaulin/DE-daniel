@@ -11,6 +11,8 @@ import { createAgentService } from '../services/AgentService';
 import { useGraphData } from './useGraphData';
 import { useConceptDesign } from './useConceptDesign';
 import { useDebouncedValue } from '../utils/performanceUtils';
+import { generateProtocol, formatProtocolAsMarkdown } from '../utils/protocolGenerator';
+import { generateSummary, formatSummaryAsMarkdown } from '../utils/summaryGenerator';
 
 /**
  * App state interface for centralized state management
@@ -267,21 +269,6 @@ export const useAppState = () => {
         
       case 'generate-protocol-outline':
         agentService.triggerAgent(action, payload, conceptDesignState, { nodes: graphData.nodes });
-        setTimeout(() => {
-          const materialList = conceptDesignState.components.materials.length > 0 
-            ? conceptDesignState.components.materials.join(', ') 
-            : 'specified materials';
-          const mechanismList = conceptDesignState.components.mechanisms.length > 0 
-            ? conceptDesignState.components.mechanisms.join(', ') 
-            : 'key mechanisms';
-          const mockProtocol = `# Protocol for: ${conceptDesignState.objective}\n\n## 1. System Setup\n   - Synthesize/acquire ${materialList}.\n   - Assemble system to realize ${mechanismList}.\n\n## 2. Validation Steps\n   - Define key performance metrics.\n   - Apply stimuli.\n   - Measure outputs.\n\n## 3. Data Analysis\n   - Analyze collected data.`;
-          
-          setConceptDesignState(prev => ({
-            ...prev,
-            protocolOutline: mockProtocol,
-            status: 'Validated'
-          }));
-        }, 2000);
         break;
         
       default:
@@ -371,6 +358,59 @@ export const useAppState = () => {
       }
     }
   }, [graphLoading, graphError, graphData.nodes.length, graphData.links.length, state.agentMessages]);
+
+  // Handle protocol and summary generation based on agent messages
+  useEffect(() => {
+    const latestMessage = state.agentMessages[state.agentMessages.length - 1];
+    if (!latestMessage?.action?.payload) return;
+
+    // Handle protocol generation completion
+    if (latestMessage.action.payload.protocolGenerated && latestMessage.sourceAgent === 'Protocol Agent') {
+      try {
+        const protocol = generateProtocol(conceptDesignState);
+        const protocolMarkdown = formatProtocolAsMarkdown(protocol);
+        
+        setConceptDesignState({
+          protocolOutline: protocolMarkdown,
+          status: 'Validated'
+        });
+      } catch (error) {
+        console.error('Error generating protocol:', error);
+        addAgentMessage({
+          sourceAgent: 'Protocol Agent',
+          type: 'error',
+          content: 'Failed to generate protocol. Please check the concept definition.'
+        });
+      }
+    }
+
+    // Handle summary generation completion
+    if (latestMessage.action.payload.summaryGenerated && latestMessage.sourceAgent === 'ConceptAgent') {
+      try {
+        const summary = generateSummary(conceptDesignState, graphData);
+        const summaryMarkdown = formatSummaryAsMarkdown(summary);
+        
+        // Add summary as a message for display
+        addAgentMessage({
+          sourceAgent: 'ConceptAgent',
+          type: 'info',
+          content: `**Generated Summary:**\n\n${summaryMarkdown.substring(0, 500)}${summaryMarkdown.length > 500 ? '...\n\n[Full summary generated]' : ''}`,
+          action: {
+            type: 'view-details',
+            label: 'View Full Summary',
+            payload: { fullSummary: summaryMarkdown }
+          }
+        });
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        addAgentMessage({
+          sourceAgent: 'ConceptAgent',
+          type: 'error',
+          content: 'Failed to generate summary. Please check the concept definition.'
+        });
+      }
+    }
+  }, [state.agentMessages, conceptDesignState, graphData, setConceptDesignState, addAgentMessage]);
 
   // Handle search filter updates
   useEffect(() => {
