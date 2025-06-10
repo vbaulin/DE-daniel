@@ -145,7 +145,30 @@ xdg-settings get default-web-browser
 sudo update-alternatives --config x-www-browser
 ```
 
-### 8. White Screen in Browser
+### 8. canberra-gtk-module Warnings (Linux)
+
+**Problem**: Console shows GTK module warnings
+```bash
+Gtk-Message: Failed to load module "canberra-gtk-module"
+```
+
+**Cause**: Missing audio feedback libraries for GTK applications
+
+**Solutions**:
+```bash
+# Ubuntu/Debian
+sudo apt-get install libcanberra-gtk-module libcanberra-gtk3-module
+
+# Fedora/RHEL  
+sudo dnf install libcanberra-gtk2 libcanberra-gtk3
+
+# Arch Linux
+sudo pacman -S libcanberra
+```
+
+**Note**: These warnings are harmless and don't affect functionality, but installing the packages will eliminate the console clutter.
+
+### 9. White Screen in Browser
 
 **Problem**: Application loads but shows blank/white screen
 
@@ -166,7 +189,7 @@ sudo update-alternatives --config x-www-browser
    - Ensure all assets are loading (200 status)
    - Look for failed resource requests
 
-### 9. 3D Graph Not Rendering
+### 10. 3D Graph Not Rendering
 
 **Problem**: Graph visualization area is empty or shows errors
 
@@ -192,7 +215,7 @@ sudo update-alternatives --config x-www-browser
 
 ## 📊 Performance Issues
 
-### 10. Slow Application Loading
+### 11. Slow Application Loading
 
 **Problem**: Application takes too long to load
 
@@ -220,7 +243,7 @@ sudo update-alternatives --config x-www-browser
    # Close unnecessary applications
    ```
 
-### 11. Graph Performance Issues
+### 12. Graph Performance Issues
 
 **Problem**: 3D graph is slow or laggy with large datasets
 
@@ -244,7 +267,7 @@ sudo update-alternatives --config x-www-browser
 
 ## 🔍 Development Issues
 
-### 12. Hot Module Replacement Not Working
+### 13. Hot Module Replacement Not Working
 
 **Problem**: Changes not reflected immediately in browser
 
@@ -263,7 +286,7 @@ echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
 sudo sysctl -p
 ```
 
-### 13. Import/Export Errors
+### 14. Import/Export Errors
 
 **Problem**: Module import/export issues
 

@@ -5,5 +5,19 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     exclude: ['lucide-react']
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          visualization: ['three', '3d-force-graph', 'three-spritetext'],
+          ui: ['lucide-react'],
+          utils: ['lodash', 'd3', 'date-fns'],
+          markdown: ['react-markdown', 'remark-gfm', 'rehype-raw']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   }
 });

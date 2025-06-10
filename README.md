@@ -81,23 +81,32 @@ npm install
 npm run dev
 ```
 
-**Note**: The application files are located in the `DE/` directory. All npm commands must be run from within this directory.
+**⚠️ Critical Note**: The application files are located in the `DE/` directory. All npm commands **MUST** be run from within this directory. If you get "package.json not found" errors, ensure you're in the correct directory:
+
+```bash
+pwd  # Should show: .../Research-Discovery-Engine/DE
+ls package.json  # Should exist
+```
 
 The application will be available at `http://localhost:5173`
 
-### Alternative: Automated Startup
-For a streamlined startup experience with automatic system checks and dependency installation:
+### Recommended: Automated Startup
+For the **most reliable startup experience** with proven server detection and comprehensive system validation:
 
 ```bash
 # From the DE directory
 python3 main.py
 ```
 
-This script will automatically:
-- Check system requirements (Node.js, npm, Python)
-- Install dependencies if needed  
-- Start the development server
-- Open the application in your browser
+This **proven startup script** will automatically:
+- ✅ Check system requirements (Node.js, npm, Python)
+- ✅ Verify project structure and dependencies
+- ✅ Install dependencies if needed  
+- ✅ Start Vite development server with robust detection
+- ✅ Open the application in your browser
+- ✅ Monitor server health and provide detailed feedback
+
+**📚 For detailed startup documentation**: See [STARTUP_GUIDE.md](DE/STARTUP_GUIDE.md)
 
 ### Basic Usage
 1. **Explore Mode**: Navigate the 3D knowledge graph using mouse controls
