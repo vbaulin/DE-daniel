@@ -90,9 +90,38 @@ The Discovery Engine embodies a human-AI co-creation process. It leverages the s
     ```
 5.  Open your browser to the local address provided by Vite (e.g., `http://localhost:5173`).
 
-## Automated Knowledge Extraction (for LLMs)
+## Comprehensive LLM Integration & Testing
 
-A [dedicated Markdown template](template_llm_extraction.md) (you would link this file here if it exists) is designed to guide Large Language Models (LLMs) in systematically extracting information from scientific papers. This template directly maps to the CNM schema defined in `css.md`, facilitating the population of `SystemNode` attributes and its connections to materials, mechanisms, methods, etc. The output of this LLM-driven process can then be parsed to further enrich the CNM.
+The Discovery Engine now includes full LLM integration with comprehensive testing capabilities:
+
+### 🤖 **LLM-Enhanced Research Capabilities**
+*   **LLM Summary Generation**: AI-powered research summaries with configurable depth and audience
+*   **Knowledge Processing**: Automated concept extraction and relationship identification
+*   **Research Question Generation**: AI-assisted formulation of research questions
+*   **Domain-Specific Analysis**: Tailored processing for materials science, nanotechnology, and related fields
+
+### 🧪 **Comprehensive LLM Testing Suite**
+*   **Unit Testing**: Full mock LLM service testing with response validation
+*   **Integration Testing**: End-to-end LLM workflow testing across all scripts
+*   **Performance Testing**: Token usage optimization and response time benchmarking
+*   **Load Testing**: Concurrent request handling and rate limiting validation
+*   **Error Handling**: Comprehensive testing of failure scenarios and recovery
+
+### 📊 **LLM Testing Scripts**
+*   **`run-tests.ts`**: Comprehensive test suite including LLM integration tests
+*   **`analyze-performance.ts`**: LLM performance benchmarking and optimization analysis
+*   **`llm-generate-summary.ts`**: Production-ready LLM summary generation
+*   **`llm-process-knowledge.ts`**: LLM-powered knowledge extraction and processing
+*   **`batch-test-headless.sh`**: Automated batch testing of all LLM capabilities
+
+### 🔬 **Testing Coverage**
+*   **Configuration Testing**: OpenAI API integration and parameter validation
+*   **Service Layer Testing**: Mock implementations for development and testing
+*   **Response Validation**: Token usage tracking and content quality assessment
+*   **Performance Metrics**: Response time, token efficiency, and throughput analysis
+*   **Error Scenarios**: API failures, timeout handling, and graceful degradation
+
+A dedicated LLM extraction template directly maps to the CNM schema defined in `css.md`, facilitating the population of `SystemNode` attributes and its connections to materials, mechanisms, methods, etc. The output of this LLM-driven process can then be parsed to further enrich the CNM.
 
 ## Current Development Status
 
@@ -104,6 +133,10 @@ A [dedicated Markdown template](template_llm_extraction.md) (you would link this
 *   **Concept Designer**: Guided workflow for creating new knowledge concepts
 *   **AI Agent Console**: Simulated AI assistant with conversation interface
 *   **Search & Navigation**: Real-time graph filtering and breadcrumb navigation
+*   **LLM Integration**: Complete OpenAI integration with production-ready services
+*   **Comprehensive Testing**: Full LLM testing suite with performance benchmarking
+*   **Headless Mode**: Automated batch processing for all scripts including LLM
+*   **Mock Testing**: Complete mock LLM services for development and CI/CD
 
 ### 🔄 **In Active Development**
 *   **Code Architecture**: Refactoring large components into smaller, focused modules
@@ -129,7 +162,9 @@ A [dedicated Markdown template](template_llm_extraction.md) (you would link this
 2. **Service Layer**: Extract agent simulation logic into dedicated services
 3. **Error Boundaries**: Implement comprehensive error handling
 4. **Performance Optimization**: Add memoization and lazy loading
-5. **Backend Integration**: Prepare for real AI service integration
+5. **LLM Production Deployment**: Scale LLM services for production workloads
+6. **Advanced LLM Features**: Implement fine-tuning and domain-specific models
+7. **Real-time LLM Integration**: Connect frontend directly to LLM services
 
 ## Future Directions
 

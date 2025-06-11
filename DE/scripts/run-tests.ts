@@ -19,25 +19,30 @@
  *   --help, -h                               Show help message
  */
 
+import 'dotenv/config';
 import { 
   createMockGraphData,
   createMockConceptDesignState,
   createMockAgentMessages,
   createMockHandlers,
   testDataGenerators,
-  graphTestUtils
+  graphTestUtils,
+  llmTestUtils,
+  llmPerformanceTestUtils
 } from '../src/utils/testUtils';
+import { createLLMService, createSummaryService, createKnowledgeService, createProtocolService } from '../src/llm/utils/factory';
 import { validateGraphData, calculateGraphStats } from '../src/utils/dataTransformUtils';
 import { generateSummary } from '../src/utils/summaryGenerator';
 import { generateProtocol } from '../src/utils/protocolGenerator';
 import { GraphData, ConceptDesignState } from '../src/types';
 
 interface CliOptions {
-  testType?: 'unit' | 'integration' | 'validation';
+  testType?: 'unit' | 'integration' | 'validation' | 'llm' | 'all';
   component?: string;
   generateMockData?: boolean;
   validateGraph?: boolean;
   performanceTest?: boolean;
+  llmTest?: boolean;
   outputFormat?: 'json' | 'readable';
   verbose?: boolean;
   help?: boolean;
@@ -64,7 +69,7 @@ interface TestSuite {
  * Parse command line arguments
  */
 function parseArgs(): CliOptions {
-  const args = ['--test-type', 'unit']; // Mock arguments for demonstration
+  const args = process.argv.slice(2); // Get actual command line arguments
   const options: CliOptions = {};
 
   for (let i = 0; i < args.length; i++) {
@@ -77,8 +82,8 @@ function parseArgs(): CliOptions {
         break;
       case '--test-type':
         const testType = args[++i];
-        if (['unit', 'integration', 'validation'].includes(testType)) {
-          options.testType = testType as 'unit' | 'integration' | 'validation';
+        if (['unit', 'integration', 'validation', 'llm', 'all'].includes(testType)) {
+          options.testType = testType as 'unit' | 'integration' | 'validation' | 'llm' | 'all';
         }
         break;
       case '--component':
@@ -92,6 +97,9 @@ function parseArgs(): CliOptions {
         break;
       case '--performance-test':
         options.performanceTest = true;
+        break;
+      case '--llm-test':
+        options.llmTest = true;
         break;
       case '--output-format':
         const format = args[++i];
@@ -119,11 +127,12 @@ Usage:
   npx tsx DE/scripts/run-tests.ts [options]
 
 Options:
-  --test-type type          Type: unit, integration, validation
+  --test-type type          Type: unit, integration, validation, llm, all
   --component name          Test specific component (e.g., GraphUtils)
   --generate-mock-data     Generate and validate mock data
   --validate-graph         Validate graph data integrity
   --performance-test       Run performance benchmarks
+  --llm-test              Run LLM integration tests
   --output-format format   Output format: json, readable (default)
   --verbose               Show detailed test output
   --help, -h              Show this help message
@@ -229,7 +238,10 @@ async function runIntegrationTests(): Promise<TestSuite> {
   results.push(await runTest('Protocol Generation Integration', async () => {
     const conceptState = createMockConceptDesignState();
     const protocol = generateProtocol(conceptState, {
-      detailLevel: 'intermediate'
+      detailLevel: 'intermediate',
+      includeTimeEstimates: true,
+      includeRiskAssessment: false,
+      outputFormat: 'markdown'
     });
     
     if (!protocol.sections || protocol.sections.length === 0) {
@@ -309,6 +321,115 @@ async function runValidationTests(): Promise<TestSuite> {
 }
 
 /**
+ * Run LLM integration tests
+ */
+async function runLLMTests(): Promise<TestSuite> {
+  const startTime = Date.now();
+  const results: TestResult[] = [];
+  
+  console.log('🤖 Running Real LLM Integration Tests...\n');
+
+  // Test 1: LLM Configuration Test
+  results.push(await runTest('Real LLM Configuration Test', async () => {
+    const apiKey = process.env.OPENAI_API_KEY;
+    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    if (!apiKey) throw new Error('OPENAI_API_KEY not found in environment');
+    if (!apiKey.startsWith('sk-')) throw new Error('Invalid OpenAI API key format');
+    return `LLM configuration validated: ${model}`;
+  }));
+
+  // Test 2: Real LLM Service Integration
+  results.push(await runTest('Real LLM Service Integration', async () => {
+    const service = createLLMService();
+    const request = {
+      userPrompt: 'Write a brief summary about advanced materials in 2 sentences.',
+      systemPrompt: 'You are a helpful research assistant.',
+      config: { maxTokens: 100, temperature: 0.7 }
+    };
+    const response = await service.generateText(request);
+    if (!response.success) throw new Error(`LLM service failed: ${response.error}`);
+    return `LLM service responded with ${response.usage.totalTokens} tokens: "${response.content.substring(0, 50)}..."`;
+  }));
+
+  // Test 3: Real LLM Summary Generation Test
+  results.push(await runTest('Real LLM Summary Generation Test', async () => {
+    const summaryService = createSummaryService();
+    const request = {
+      context: { 
+        concept: 'Advanced Polymer Composites',
+        domain: 'materials science',
+        materials: ['shape memory polymers', 'carbon nanotubes'],
+        applications: ['aerospace', 'biomedical devices']
+      },
+      summaryType: 'technical' as const,
+      targetAudience: 'researcher' as const,
+      length: 'brief' as const,
+      includeReferences: false,
+      includeFutureWork: false,
+      userPrompt: 'Generate a technical summary of advanced polymer composites research.',
+      config: { maxTokens: 200, temperature: 0.7 }
+    };
+    const summary = await summaryService.generateSummary(request);
+    if (!summary.success) throw new Error(`Summary generation failed: ${summary.error}`);
+    return `Generated summary: "${summary.content.substring(0, 100)}..."`;
+  }));
+
+  // Test 4: Real LLM Knowledge Processing Test
+  results.push(await runTest('Real LLM Knowledge Processing Test', async () => {
+    const knowledgeService = createKnowledgeService();
+    const testText = 'Smart materials research focuses on polymers that respond to temperature changes, shape memory alloys for aerospace applications, and hydrogels for biomedical devices.';
+    const concepts = await knowledgeService.extractConcepts(testText, 'materials science', 5);
+    if (!concepts || concepts.length === 0) throw new Error('No concepts extracted');
+    return `Extracted ${concepts.length} concepts: ${concepts.slice(0, 3).join(', ')}`;
+  }));
+
+  // Test 5: Real LLM Protocol Generation Test
+  results.push(await runTest('Real LLM Protocol Generation Test', async () => {
+    const protocolService = createProtocolService();
+    const request = {
+      context: {
+        concept: 'Smart Hydrogel Synthesis',
+        domain: 'materials science',
+        materials: ['hydrogel matrix', 'crosslinking agents'],
+        mechanisms: ['pH sensitivity', 'thermal response']
+      },
+      protocolType: 'synthesis' as const,
+      detailLevel: 'intermediate' as const,
+      userPrompt: 'Generate a synthesis protocol for smart hydrogel materials.',
+      config: { maxTokens: 300, temperature: 0.7 }
+    };
+    const protocol = await protocolService.generateProtocol(request);
+    if (!protocol.success) throw new Error(`Protocol generation failed: ${protocol.error}`);
+    return `Generated protocol: "${protocol.content.substring(0, 100)}..."`;
+  }));
+
+  // Test 6: Real LLM Performance Measurement
+  results.push(await runTest('Real LLM Performance Measurement', async () => {
+    const service = createLLMService();
+    const request = {
+      userPrompt: 'Quick test response in one sentence.',
+      config: { maxTokens: 50, temperature: 0.7 }
+    };
+    const performance = await llmPerformanceTestUtils.measureResponseTime(
+      () => service.generateText(request)
+    );
+    if (performance.duration > 30000) throw new Error('LLM response too slow');
+    return `LLM responded in ${performance.duration}ms`;
+  }));
+
+  // Test 7: Real LLM Load Testing
+  results.push(await runTest('Real LLM Load Testing', async () => {
+    const service = createLLMService();
+    const loadTest = await llmPerformanceTestUtils.simulateLoad(service, 3); // Reduced for real API
+    if (loadTest.successRate < 60) throw new Error(`Low success rate: ${loadTest.successRate}%`);
+    return `Load test: ${loadTest.successful}/${loadTest.totalRequests} successful (${loadTest.successRate}%)`;
+  }));
+
+  const totalDuration = Date.now() - startTime;
+  return createTestSuite('Real LLM Integration Tests', results, totalDuration);
+}
+
+/**
  * Run performance tests
  */
 async function runPerformanceTests(): Promise<TestSuite> {
@@ -353,11 +474,12 @@ async function runPerformanceTests(): Promise<TestSuite> {
     
     const perfStart = Date.now();
     const summary = generateSummary(conceptState, undefined, {
-      summaryLength: 'detailed',
+      summaryLength: 'comprehensive',
       technicalLevel: 'technical',
       includeComponents: true,
       includeRelatedWork: true,
-      includeRecommendations: true
+      includeRecommendations: true,
+      outputFormat: 'markdown'
     });
     const perfEnd = Date.now();
     
@@ -474,19 +596,24 @@ async function main() {
     const testSuites: TestSuite[] = [];
 
     // Run requested test types
-    if (!options.testType || options.testType === 'unit') {
+    if (!options.testType || options.testType === 'unit' || options.testType === 'all') {
       const unitSuite = await runUnitTests(options.component);
       testSuites.push(unitSuite);
     }
 
-    if (!options.testType || options.testType === 'integration') {
+    if (!options.testType || options.testType === 'integration' || options.testType === 'all') {
       const integrationSuite = await runIntegrationTests();
       testSuites.push(integrationSuite);
     }
 
-    if (!options.testType || options.testType === 'validation') {
+    if (!options.testType || options.testType === 'validation' || options.testType === 'all') {
       const validationSuite = await runValidationTests();
       testSuites.push(validationSuite);
+    }
+
+    if (options.testType === 'llm' || options.testType === 'all' || options.llmTest) {
+      const llmSuite = await runLLMTests();
+      testSuites.push(llmSuite);
     }
 
     // Run performance tests if requested

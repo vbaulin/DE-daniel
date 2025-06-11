@@ -15,6 +15,8 @@
  *   --validate                            Validate graph structure
  *   --find-path source target             Find shortest path between nodes
  *   --output-format json|readable         Output format
+ *   --headless                            Enable headless mode with file output
+ *   --headless-output ./path              Custom output directory for headless mode
  *   --help, -h                           Show help message
  */
 
@@ -36,14 +38,33 @@ interface CliOptions {
   validate?: boolean;
   findPath?: [string, string];
   outputFormat?: 'json' | 'readable';
+  headless?: boolean;
+  headlessOutput?: string;
   help?: boolean;
+}
+
+interface HeadlessOutput {
+  outputDir: string;
+  report: {
+    scriptName: string;
+    timestamp: string;
+    startTime: number;
+    duration?: number;
+    inputFiles: string[];
+    processingSteps: string[];
+    outputFiles: string[];
+    errors: string[];
+    warnings: string[];
+    summary: string;
+    results: any;
+  };
 }
 
 /**
  * Parse command line arguments
  */
 function parseArgs(): CliOptions {
-  const args = process.argv.slice(2);
+  const args = (globalThis as any).process?.argv?.slice(2) || [];
   const options: CliOptions = {};
 
   for (let i = 0; i < args.length; i++) {
@@ -79,6 +100,13 @@ function parseArgs(): CliOptions {
           options.outputFormat = format as 'json' | 'readable';
         }
         break;
+      case '--headless':
+        options.headless = true;
+        break;
+      case '--headless-output':
+        options.headless = true;
+        options.headlessOutput = args[++i];
+        break;
     }
   }
 
@@ -102,6 +130,8 @@ Options:
   --validate                  Validate graph structure
   --find-path source target   Find shortest path between nodes
   --output-format format      Output format: json, readable (default)
+  --headless                  Enable headless mode with file output
+  --headless-output dir       Custom output directory for headless mode
   --help, -h                 Show this help message
 
 Examples:
@@ -116,6 +146,12 @@ Examples:
 
   # Comprehensive analysis
   npx tsx DE/scripts/analyze-data.ts --input-file graph.json --stats --validate
+
+  # Headless mode with timestamped output
+  npx tsx DE/scripts/analyze-data.ts --stats --validate --headless
+
+  # Headless mode with custom output directory
+  npx tsx DE/scripts/analyze-data.ts --stats --headless-output ./my-analysis-results
 `);
 }
 
@@ -297,6 +333,153 @@ function displayKeywordAnalysis(graphData: GraphData) {
 }
 
 /**
+ * Initialize headless output system
+ */
+async function initializeHeadlessOutput(options: CliOptions): Promise<HeadlessOutput | null> {
+  if (!options.headless) return null;
+
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    const baseOutputDir = options.headlessOutput || './output';
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const folderName = `analyze-data_${timestamp}`;
+    const outputDir = path.join(baseOutputDir, folderName);
+    
+    await fs.promises.mkdir(outputDir, { recursive: true });
+
+    const headlessOutput: HeadlessOutput = {
+      outputDir,
+      report: {
+        scriptName: 'analyze-data.ts',
+        timestamp: new Date().toISOString(),
+        startTime: Date.now(),
+        inputFiles: options.inputFile ? [options.inputFile] : [],
+        processingSteps: [],
+        outputFiles: [],
+        errors: [],
+        warnings: [],
+        summary: '',
+        results: {}
+      }
+    };
+
+    headlessOutput.report.processingSteps.push('Headless output system initialized');
+    return headlessOutput;
+  } catch (error) {
+    console.error('❌ Failed to initialize headless output:', error);
+    return null;
+  }
+}
+
+/**
+ * Save headless output results
+ */
+async function saveHeadlessOutput(headlessOutput: HeadlessOutput, results: any) {
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    // Update report
+    headlessOutput.report.duration = Date.now() - headlessOutput.report.startTime;
+    headlessOutput.report.results = results;
+    headlessOutput.report.summary = generateSummary(results);
+
+    // Save core output
+    const coreOutputPath = path.join(headlessOutput.outputDir, 'core-output.json');
+    await fs.promises.writeFile(coreOutputPath, JSON.stringify(results, null, 2));
+    headlessOutput.report.outputFiles.push('core-output.json');
+
+    // Save processing report
+    const reportPath = path.join(headlessOutput.outputDir, 'processing-report.json');
+    await fs.promises.writeFile(reportPath, JSON.stringify(headlessOutput.report, null, 2));
+    headlessOutput.report.outputFiles.push('processing-report.json');
+
+    // Save human-readable summary
+    const summaryContent = generateHumanReadableSummary(headlessOutput.report);
+    const summaryPath = path.join(headlessOutput.outputDir, 'summary.md');
+    await fs.promises.writeFile(summaryPath, summaryContent);
+    headlessOutput.report.outputFiles.push('summary.md');
+
+    console.log(`\n📁 Headless output saved to: ${headlessOutput.outputDir}`);
+    console.log(`📄 Core output: ${coreOutputPath}`);
+    console.log(`📊 Report: ${reportPath}`);
+    console.log(`📝 Summary: ${summaryPath}`);
+
+  } catch (error) {
+    console.error('❌ Failed to save headless output:', error);
+  }
+}
+
+/**
+ * Generate summary from results
+ */
+function generateSummary(results: any): string {
+  const parts: string[] = [];
+  
+  if (results.statistics) {
+    parts.push(`Graph analysis completed with ${results.statistics.totalNodes} nodes and ${results.statistics.totalLinks} links.`);
+  }
+  
+  if (results.searchResults) {
+    parts.push(`Search found ${results.searchResults.nodes.length} matching nodes.`);
+  }
+  
+  if (results.pathResults) {
+    parts.push(`Path analysis completed between specified nodes.`);
+  }
+  
+  if (results.validation) {
+    const status = results.validation.isValid ? 'passed' : 'failed';
+    parts.push(`Graph validation ${status}.`);
+  }
+
+  return parts.join(' ');
+}
+
+/**
+ * Generate human-readable summary report
+ */
+function generateHumanReadableSummary(report: any): string {
+  const duration = report.duration ? `${(report.duration / 1000).toFixed(2)}s` : 'N/A';
+  
+  return `# Data Analysis - Processing Report
+
+## Overview
+- **Script**: ${report.scriptName}
+- **Timestamp**: ${report.timestamp}
+- **Duration**: ${duration}
+- **Status**: ${report.errors.length === 0 ? '✅ Success' : '❌ Failed'}
+
+## Input Information
+- **Input Files**: ${report.inputFiles.length > 0 ? report.inputFiles.join(', ') : 'None specified (using mock data)'}
+
+## Processing Steps
+${report.processingSteps.map((step: string) => `- ${step}`).join('\n')}
+
+## Output Files
+${report.outputFiles.map((file: string) => `- ${file}`).join('\n')}
+
+${report.warnings.length > 0 ? `## Warnings
+${report.warnings.map((warning: string) => `- ${warning}`).join('\n')}
+` : ''}
+
+${report.errors.length > 0 ? `## Errors
+${report.errors.map((error: string) => `- ${error}`).join('\n')}
+` : ''}
+
+## Summary
+${report.summary}
+
+## Results Overview
+\`\`\`json
+${JSON.stringify(report.results, null, 2)}
+\`\`\`
+`;
+}
+
+/**
  * Main execution function
  */
 async function main() {
@@ -309,43 +492,99 @@ async function main() {
     return;
   }
 
+  // Initialize headless output if requested
+  const headlessOutput = await initializeHeadlessOutput(options);
+
   try {
     // Load graph data
     const graphData = await loadGraphData(options.inputFile);
     
-    console.log(`✅ Loaded graph with ${graphData.nodes.length} nodes and ${graphData.links.length} links\n`);
+    if (!options.headless) {
+      console.log(`✅ Loaded graph with ${graphData.nodes.length} nodes and ${graphData.links.length} links\n`);
+    }
+
+    // Store results for headless output
+    const results: any = {
+      graphData: {
+        nodeCount: graphData.nodes.length,
+        linkCount: graphData.links.length
+      }
+    };
 
     // Perform requested analyses
     if (options.validate) {
-      displayValidation(graphData);
+      const validation = validateGraphData(graphData);
+      results.validation = validation;
+      if (headlessOutput) {
+        headlessOutput.report.processingSteps.push('Graph validation completed');
+      }
+      if (!options.headless) {
+        displayValidation(graphData);
+      }
     }
 
     if (options.showStats) {
-      displayStatistics(graphData);
-      displayNodeGrouping(graphData);
-      displayKeywordAnalysis(graphData);
+      const statistics = calculateGraphStats(graphData);
+      results.statistics = statistics;
+      if (headlessOutput) {
+        headlessOutput.report.processingSteps.push('Statistical analysis completed');
+      }
+      if (!options.headless) {
+        displayStatistics(graphData);
+        displayNodeGrouping(graphData);
+        displayKeywordAnalysis(graphData);
+      }
     }
 
     if (options.searchQuery) {
-      displaySearchResults(graphData, options.searchQuery);
+      const searchResults = filterGraphBySearch(graphData, options.searchQuery);
+      results.searchResults = searchResults.filteredData;
+      if (headlessOutput) {
+        headlessOutput.report.processingSteps.push(`Search completed for query: "${options.searchQuery}"`);
+      }
+      if (!options.headless) {
+        displaySearchResults(graphData, options.searchQuery);
+      }
     }
 
     if (options.findPath) {
-      displayPathResults(graphData, options.findPath[0], options.findPath[1]);
+      const path = findShortestPath(graphData, options.findPath[0], options.findPath[1]);
+      results.pathResults = {
+        source: options.findPath[0],
+        target: options.findPath[1],
+        path: path,
+        found: !!path
+      };
+      if (headlessOutput) {
+        headlessOutput.report.processingSteps.push(`Path analysis completed: ${options.findPath[0]} → ${options.findPath[1]}`);
+      }
+      if (!options.headless) {
+        displayPathResults(graphData, options.findPath[0], options.findPath[1]);
+      }
     }
 
-    // Output in requested format
-    if (options.outputFormat === 'json') {
+    // Output in requested format for non-headless mode
+    if (options.outputFormat === 'json' && !options.headless) {
       console.log('\n📄 Graph Data (JSON):');
       console.log('═'.repeat(60));
       console.log(JSON.stringify(graphData, null, 2));
     }
 
-    console.log('\n🎉 Analysis completed successfully!');
+    // Save results in headless mode
+    if (headlessOutput) {
+      await saveHeadlessOutput(headlessOutput, results);
+    } else {
+      console.log('\n🎉 Analysis completed successfully!');
+    }
 
   } catch (error) {
+    if (headlessOutput) {
+      headlessOutput.report.errors.push(`Analysis failed: ${error}`);
+      await saveHeadlessOutput(headlessOutput, { error: String(error) });
+    }
     console.error('❌ Error during analysis:', error);
-    process.exit(1);
+    // Use globalThis to avoid TypeScript issues
+    (globalThis as any).process?.exit?.(1);
   }
 }
 

@@ -2,10 +2,18 @@
  * Testing Utilities
  * 
  * This module provides utilities for testing React components and application logic
- * in the Discovery Engine application.
+ * in the Discovery Engine application, including comprehensive LLM testing support.
  */
 
 import { GraphData, NodeObject, LinkObject, ConceptDesignState, AgentMessage } from '../types';
+import { calculateGraphStats, validateGraphData } from './dataTransformUtils';
+
+// Import real LLM services
+import { createLLMService, createSummaryService, createKnowledgeService, createProtocolService } from '../llm/utils/factory';
+import { LLMService } from '../llm/LLMService';
+import { SummaryLLMService } from '../llm/services/SummaryLLMService';
+import { KnowledgeLLMService } from '../llm/services/KnowledgeLLMService';
+import { ProtocolLLMService } from '../llm/services/ProtocolLLMService';
 
 /**
  * Creates mock graph data for testing
@@ -35,7 +43,7 @@ export const createMockGraphData = (
       status: statuses[Math.floor(Math.random() * statuses.length)] as any,
       references: [`ref-${i}`],
       sourceFileKey: 'test',
-      keywords: [`keyword${i}`, `test`]
+
     });
   }
 
@@ -91,12 +99,17 @@ export const createMockConceptDesignState = (
       theoretical_concepts: ['active-inference', 'complexity-theory']
     },
     cssVectorDraft: {
-      stimulusType: 'thermal',
-      responseType: 'shape-change',
-      timeScale: 'seconds',
-      reversibility: 'reversible'
+      context: {
+        material_primary: ['test-material'],
+        environment_type: 'laboratory'
+      },
+      interface: {
+        input_mechanism: ['thermal'],
+        output_mechanism: ['shape-change']
+      }
     },
     protocolOutline: '# Test Protocol\n\n## Setup\n- Prepare test materials\n\n## Execution\n- Apply stimulus\n- Measure response',
+    fieldSuggestions: {},
     ...overrides
   };
 };
@@ -127,6 +140,352 @@ export const createMockAgentMessages = (count: number = 5): AgentMessage[] => {
 };
 
 /**
+ * LLM Testing Utilities
+ * 
+ * Comprehensive utilities for testing LLM integration
+ */
+export const llmTestUtils = {
+  /**
+   * Create mock LLM configuration for testing
+   */
+  createMockLLMConfig: () => ({
+    apiKey: 'test-api-key-mock',
+    model: 'gpt-4o-mini' as const,
+    maxTokens: 1000,
+    temperature: 0.7,
+    baseURL: undefined,
+    organization: undefined,
+    project: undefined
+  }),
+
+  /**
+   * Create mock LLM request
+   */
+  createMockLLMRequest: (overrides: any = {}) => ({
+    messages: [
+      { role: 'system' as const, content: 'You are a research assistant.' },
+      { role: 'user' as const, content: 'Test query for mock LLM.' }
+    ],
+    maxTokens: 1000,
+    temperature: 0.7,
+    ...overrides
+  }),
+
+  /**
+   * Create mock LLM response
+   */
+  createMockLLMResponse: (overrides: any = {}) => ({
+    success: true,
+    content: 'This is a mock LLM response for testing purposes.',
+    usage: {
+      promptTokens: 50,
+      completionTokens: 25,
+      totalTokens: 75
+    },
+    metadata: {
+      model: 'gpt-4o-mini',
+      temperature: 0.7,
+      requestId: 'test-request-123',
+      timestamp: Date.now(),
+      duration: 500,
+      finishReason: 'completed' as const
+    },
+    ...overrides
+  }),
+
+  /**
+   * Create mock summary LLM result
+   */
+  createMockSummaryResult: (concept: string = 'Test Concept') => ({
+    success: true,
+    content: `Mock summary content for ${concept}`,
+    summary: {
+      abstract: `This is a mock abstract for ${concept} research.`,
+      keyFindings: [
+        'Mock finding 1: Significant improvement in performance',
+        'Mock finding 2: Novel approach to material design',
+        'Mock finding 3: Potential for commercial applications'
+      ],
+      methodology: 'Mock methodology description with experimental details.',
+      implications: [
+        'Advancement in smart materials field',
+        'Potential for sustainable technologies',
+        'Opens new research directions'
+      ],
+      futureWork: [
+        'Scale up for industrial applications',
+        'Long-term stability studies',
+        'Cost optimization analysis'
+      ],
+      references: [
+        'Smith, J. et al. (2023). Advanced Materials Research',
+        'Chen, L. (2022). Smart Material Applications'
+      ]
+    },
+    usage: {
+      promptTokens: 200,
+      completionTokens: 150,
+      totalTokens: 350
+    },
+    metadata: {
+      model: 'gpt-4o',
+      temperature: 0.5,
+      requestId: 'summary-test-456',
+      timestamp: Date.now(),
+      duration: 1200,
+      finishReason: 'completed' as const
+    }
+  }),
+
+  /**
+   * Create mock knowledge processing result
+   */
+  createMockKnowledgeResult: (domain: string = 'materials science') => ({
+    success: true,
+    content: `Mock knowledge processing for ${domain}`,
+    extractedData: {
+      concepts: [
+        'Smart Materials',
+        'Adaptive Systems',
+        'Responsive Polymers',
+        'Nanocomposites',
+        'Shape Memory Alloys'
+      ],
+      relationships: [
+        { source: 'Smart Materials', relationship: 'includes', target: 'Shape Memory Alloys' },
+        { source: 'Adaptive Systems', relationship: 'utilizes', target: 'Responsive Polymers' },
+        { source: 'Nanocomposites', relationship: 'enhances', target: 'Smart Materials' }
+      ],
+      questions: [
+        'How can smart materials be optimized for energy efficiency?',
+        'What are the long-term stability considerations?',
+        'How do environmental factors affect performance?'
+      ],
+      classifications: {
+        'material_type': 'Composite',
+        'application_domain': 'Aerospace',
+        'technology_readiness': 'TRL 6'
+      }
+    },
+    usage: {
+      promptTokens: 300,
+      completionTokens: 200,
+      totalTokens: 500
+    },
+    metadata: {
+      model: 'gpt-4o',
+      temperature: 0.4,
+      requestId: 'knowledge-test-789',
+      timestamp: Date.now(),
+      duration: 800,
+      finishReason: 'completed' as const
+    }
+  }),
+
+  /**
+   * Create mock protocol generation result
+   */
+  createMockProtocolResult: (objective: string = 'Test Protocol') => ({
+    success: true,
+    content: `Mock protocol for ${objective}`,
+    protocol: {
+      title: objective,
+      objective: `Generate experimental protocol for ${objective}`,
+      sections: [
+        {
+          title: 'Materials and Equipment',
+          content: 'List of required materials and equipment for the experiment.',
+          estimatedTime: '30 minutes'
+        },
+        {
+          title: 'Preparation',
+          content: 'Step-by-step preparation procedures.',
+          estimatedTime: '1 hour'
+        },
+        {
+          title: 'Experimental Procedure',
+          content: 'Detailed experimental steps and measurements.',
+          estimatedTime: '2 hours'
+        },
+        {
+          title: 'Data Analysis',
+          content: 'Methods for analyzing collected data.',
+          estimatedTime: '1 hour'
+        }
+      ],
+      safetyConsiderations: [
+        'Wear appropriate personal protective equipment',
+        'Ensure proper ventilation',
+        'Handle chemicals according to safety data sheets'
+      ],
+      metadata: {
+        estimatedDuration: '4.5 hours',
+        skillLevel: 'intermediate',
+        materials: ['polymer substrate', 'crosslinking agent', 'catalyst'],
+        mechanisms: ['thermal curing', 'chemical crosslinking']
+      }
+    },
+    usage: {
+      promptTokens: 250,
+      completionTokens: 180,
+      totalTokens: 430
+    },
+    metadata: {
+      model: 'gpt-4o',
+      temperature: 0.3,
+      requestId: 'protocol-test-101',
+      timestamp: Date.now(),
+      duration: 1000,
+      finishReason: 'completed' as const
+    }
+  })
+};
+
+/**
+ * Mock LLM service implementations for testing
+ */
+export const mockLLMServices = {
+  /**
+   * Mock LLM service that returns predefined responses
+   */
+  createMockLLMService: () => ({
+    generateCompletion: mockFn((request: any) => 
+      Promise.resolve(llmTestUtils.createMockLLMResponse())
+    ),
+    processBatch: mockFn((requests: any[]) => 
+      Promise.resolve({
+        results: requests.map(() => llmTestUtils.createMockLLMResponse()),
+        batchId: 'test-batch-123',
+        completedAt: Date.now()
+      })
+    ),
+    validateInput: mockFn(() => Promise.resolve(true))
+  }),
+
+  /**
+   * Mock summary LLM service
+   */
+  createMockSummaryService: () => ({
+    generateSummary: mockFn((request: any) => 
+      Promise.resolve(llmTestUtils.createMockSummaryResult(request.context?.concept))
+    ),
+    generateExecutiveSummary: mockFn((context: any) => 
+      Promise.resolve(`Executive summary for ${context.concept}`)
+    ),
+    generateTechnicalSummary: mockFn((context: any) => 
+      Promise.resolve(`Technical summary for ${context.concept}`)
+    )
+  }),
+
+  /**
+   * Mock knowledge LLM service
+   */
+  createMockKnowledgeService: () => ({
+    extractConcepts: mockFn((text: string, domain: string) => 
+      Promise.resolve(['Concept 1', 'Concept 2', 'Concept 3'])
+    ),
+    findRelationships: mockFn((text: string, domain: string) => 
+      Promise.resolve([
+        { source: 'Concept 1', relationship: 'relates to', target: 'Concept 2' }
+      ])
+    ),
+    generateQuestions: mockFn((text: string, domain: string) => 
+      Promise.resolve([
+        'What are the key challenges?',
+        'How can this be improved?',
+        'What are the applications?'
+      ])
+    ),
+    processKnowledge: mockFn((request: any) => 
+      Promise.resolve(llmTestUtils.createMockKnowledgeResult(request.domain))
+    )
+  }),
+
+  /**
+   * Mock protocol LLM service
+   */
+  createMockProtocolService: () => ({
+    generateProtocol: mockFn((request: any) => 
+      Promise.resolve(llmTestUtils.createMockProtocolResult(request.objective))
+    ),
+    generateSafetyGuidelines: mockFn((materials: string[]) => 
+      Promise.resolve([
+        'Handle materials with care',
+        'Use appropriate PPE',
+        'Follow disposal procedures'
+      ])
+    )
+  })
+};
+
+/**
+ * LLM performance testing utilities
+ */
+export const llmPerformanceTestUtils = {
+  /**
+   * Measure LLM response time
+   */
+  measureResponseTime: async (operation: () => Promise<any>) => {
+    const startTime = Date.now();
+    const result = await operation();
+    const endTime = Date.now();
+    return {
+      result,
+      duration: endTime - startTime,
+      timestamp: startTime
+    };
+  },
+
+  /**
+   * Test token usage efficiency
+   */
+  calculateTokenEfficiency: (result: any) => {
+    const { usage } = result;
+    if (!usage) return { efficiency: 0, details: 'No usage data' };
+    
+    const efficiency = usage.completionTokens / usage.totalTokens;
+    return {
+      efficiency: Math.round(efficiency * 100),
+      details: `${usage.completionTokens}/${usage.totalTokens} tokens used effectively`
+    };
+  },
+
+  /**
+   * Simulate load testing for LLM services
+   */
+  simulateLoad: async (service: any, requestCount: number = 10) => {
+    const startTime = Date.now();
+    const promises = [];
+    
+    for (let i = 0; i < requestCount; i++) {
+      promises.push(service.generateText({ 
+        userPrompt: `Test request ${i}`,
+        config: { maxTokens: 10, temperature: 0 }
+      }));
+    }
+    
+    const results = await Promise.allSettled(promises);
+    const endTime = Date.now();
+    
+    const successful = results.filter(r => 
+      r.status === 'fulfilled' && (r.value as any)?.success
+    ).length;
+    const failed = results.filter(r => 
+      r.status === 'rejected' || (r.status === 'fulfilled' && !(r.value as any)?.success)
+    ).length;
+    
+    return {
+      totalRequests: requestCount,
+      successful,
+      failed,
+      successRate: (successful / requestCount) * 100,
+      totalDuration: endTime - startTime,
+      averageResponseTime: (endTime - startTime) / requestCount
+    };
+  }
+};
+
+/**
  * Mock functions for testing component interactions
  */
 export const createMockHandlers = () => ({
@@ -141,7 +500,13 @@ export const createMockHandlers = () => ({
   onNavigateToWikiSection: mockFn(),
   onSetActiveMode: mockFn(),
   onBreadcrumbNavigate: mockFn(),
-  onFilterComplete: mockFn()
+  onFilterComplete: mockFn(),
+  
+  // LLM-specific mock handlers
+  onLLMSummaryGenerate: mockFn(),
+  onLLMKnowledgeProcess: mockFn(),
+  onLLMProtocolGenerate: mockFn(),
+  onLLMConfigUpdate: mockFn()
 });
 
 /**
@@ -265,6 +630,37 @@ export const mockImplementations = {
     error: mockFn(),
     group: mockFn(),
     groupEnd: mockFn()
+  },
+
+  /**
+   * Mock OpenAI API for LLM testing
+   */
+  openai: {
+    chat: {
+      completions: {
+        create: mockFn((params: any) => 
+          Promise.resolve({
+            id: 'test-completion-123',
+            object: 'chat.completion',
+            created: Date.now(),
+            model: params.model || 'gpt-4o-mini',
+            choices: [{
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: 'Mock LLM response for testing'
+              },
+              finish_reason: 'stop'
+            }],
+            usage: {
+              prompt_tokens: 50,
+              completion_tokens: 25,
+              total_tokens: 75
+            }
+          })
+        )
+      }
+    }
   }
 };
 
@@ -292,7 +688,7 @@ export const testDataGenerators = {
         label: 'Isolated Mechanism',
         description: 'Another isolated node for testing',
         origin: 'user_upload',
-        status: 'Experimental'
+        status: 'Proposed'
       }
     ];
 
@@ -325,7 +721,45 @@ export const testDataGenerators = {
    * Creates large graph data for performance testing
    */
   createLargeGraphData: (nodeCount: number = 1000): GraphData => 
-    createMockGraphData(nodeCount, 0.1)
+    createMockGraphData(nodeCount, 0.1),
+
+  /**
+   * Create test concept for LLM testing
+   */
+  createTestConcept: (concept: string = 'Smart Materials') => createMockConceptDesignState({
+    objective: concept,
+    components: {
+      materials: ['test-material-1', 'test-material-2'],
+      mechanisms: ['test-mechanism-1'],
+      methods: ['test-method-1'],
+      theoretical_concepts: ['test-theory-1']
+    }
+  }),
+
+  /**
+   * Create test agent messages with LLM content
+   */
+  createTestAgentMessages: (count: number = 5) => createMockAgentMessages(count).map(msg => ({
+    ...msg,
+    content: `LLM-enhanced: ${msg.content}`,
+    sourceAgent: msg.sourceAgent + ' (LLM)'
+  })),
+
+  /**
+   * Create comprehensive test research context
+   */
+  createTestResearchContext: (domain: string = 'materials science') => ({
+    concept: 'Advanced Adaptive Materials',
+    domain,
+    materials: ['shape-memory-polymers', 'carbon-nanotubes', 'hydrogels'],
+    mechanisms: ['thermal-response', 'electrical-conductivity', 'ph-sensitivity'],
+    applications: ['soft-robotics', 'biomedical-devices', 'smart-textiles'],
+    researchQuestions: [
+      'How can we optimize response time?',
+      'What are the durability considerations?',
+      'How do we scale manufacturing?'
+    ]
+  })
 };
 
 /**
@@ -355,7 +789,20 @@ export const customMatchers = {
     sourceAgent: string, 
     type: AgentMessage['type']
   ): boolean => 
-    messages.some(msg => msg.sourceAgent === sourceAgent && msg.type === type)
+    messages.some(msg => msg.sourceAgent === sourceAgent && msg.type === type),
+
+  /**
+   * Checks if LLM result has expected structure
+   */
+  toHaveValidLLMResult: (result: any): boolean => 
+    result && typeof result.success === 'boolean' && 
+    result.content && result.usage && result.metadata,
+
+  /**
+   * Checks if LLM usage is within expected bounds
+   */
+  toHaveReasonableTokenUsage: (result: any, maxTokens: number = 5000): boolean => 
+    result.usage && result.usage.totalTokens <= maxTokens && result.usage.totalTokens > 0
 };
 
 /**
@@ -379,11 +826,29 @@ export const testSetup = {
   },
 
   /**
+   * Sets up mock LLM environment
+   */
+  setupMockLLMEnvironment: () => {
+    // Mock environment variables
+    process.env.OPENAI_API_KEY = 'test-api-key';
+    process.env.OPENAI_MODEL = 'gpt-4o-mini';
+    process.env.OPENAI_MAX_TOKENS = '2000';
+    process.env.OPENAI_TEMPERATURE = '0.7';
+
+    // Setup basic mock environment
+    testSetup.setupMockEnvironment();
+  },
+
+  /**
    * Cleans up after tests
    */
   cleanup: () => {
     clearAllMocks();
     mockImplementations.localStorage.clear();
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_MODEL;
+    delete process.env.OPENAI_MAX_TOKENS;
+    delete process.env.OPENAI_TEMPERATURE;
   }
 };
 
@@ -392,8 +857,8 @@ export const testSetup = {
  */
 function mockFn(implementation?: (...args: any[]) => any) {
   const fn = implementation || (() => {});
-  fn.mockClear = () => {};
-  fn.mockReset = () => {};
+  (fn as any).mockClear = () => {};
+  (fn as any).mockReset = () => {};
   return fn;
 }
 
@@ -405,8 +870,8 @@ function clearAllMocks() {
 }
 
 // Export a mock jest object for non-test environments
-if (typeof jest === 'undefined') {
-  global.jest = {
+if (typeof (globalThis as any).jest === 'undefined') {
+  (globalThis as any).jest = {
     fn: mockFn,
     clearAllMocks: clearAllMocks
   };

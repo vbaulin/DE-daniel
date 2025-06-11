@@ -16,6 +16,8 @@
  *   --mechanisms "mechanism1,mechanism2"
  *   --detail-level basic|intermediate|advanced
  *   --output-file path/to/output.md
+ *   --headless                            Enable headless mode with file output
+ *   --headless-output ./path              Custom output directory for headless mode
  */
 
 import { generateProtocol, formatProtocolAsMarkdown, createStandaloneProtocol } from '../src/utils/protocolGenerator';
@@ -30,6 +32,8 @@ interface CliOptions {
   methods?: string[];
   detailLevel?: 'basic' | 'intermediate' | 'advanced';
   outputFile?: string;
+  headless?: boolean;
+  headlessOutput?: string;
   help?: boolean;
 }
 

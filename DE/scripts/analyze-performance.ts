@@ -32,7 +32,7 @@ import { generateProtocol } from '../src/utils/protocolGenerator';
 import { GraphData } from '../src/types';
 
 interface CliOptions {
-  testType?: 'render' | 'compute' | 'memory' | 'network';
+  testType?: 'render' | 'compute' | 'memory' | 'network' | 'llm' | 'all';
   benchmarkSize?: 'small' | 'medium' | 'large';
   profileComponents?: boolean;
   optimizationSuggestions?: boolean;
