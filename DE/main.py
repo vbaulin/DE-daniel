@@ -355,7 +355,8 @@ class ServerManager:
     def __init__(self, project_root: Path):
         self.project_root = project_root
         self.process = None
-        self.server_url = "http://localhost:5173"
+        self.server_url = "http://localhost:5173"  # Default, will be updated dynamically
+        self.actual_port = None
         
     def check_port_availability(self, port: int = 5173) -> bool:
         """Check if the default port is available"""
@@ -368,6 +369,21 @@ class ServerManager:
             return result != 0  # Port is available if connection failed
         except Exception:
             return True  # Assume available if we can't check
+    
+    def extract_port_from_output(self, line: str) -> Optional[int]:
+        """Extract port number from Vite server output"""
+        try:
+            import re
+            # Look for patterns like "Local: http://localhost:5175/"
+            match = re.search(r'Local:\s*http://localhost:(\d+)', line)
+            if match:
+                port = int(match.group(1))
+                self.actual_port = port
+                self.server_url = f"http://localhost:{port}"
+                return port
+            return None
+        except Exception:
+            return None
     
     def wait_for_server(self, timeout: int = 60) -> bool:
         """Wait for the development server to be ready"""
@@ -447,8 +463,13 @@ class ServerManager:
                             # Print server output for debugging
                             print(f"  {line.strip()}")
                             
-                            # Check if server is ready
-                            if "Local:" in line and "localhost:5173" in line:
+                            # Extract port number if this is the Local URL line
+                            extracted_port = self.extract_port_from_output(line)
+                            if extracted_port:
+                                print_info(f"Detected server running on port {extracted_port}")
+                            
+                            # Check if server is ready - look for any localhost URL
+                            if "Local:" in line and "localhost:" in line:
                                 ready = True
                                 break
                             elif "ready in" in line.lower():
