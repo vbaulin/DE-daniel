@@ -9,17 +9,24 @@ This directory contains comprehensive documentation for the Research Discovery E
 ### For Users
 - **[Getting Started](#getting-started)** - Start here if you're new to the platform
 - **[User Guide](#user-guide)** - How to use the application features
+- **[Startup Guide](STARTUP_GUIDE.md)** - Complete setup and launch instructions
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### For Developers
 - **[Development Guide](DEVELOPMENT_GUIDE.md)** - Complete developer setup and workflow
 - **[Component Architecture](COMPONENTS.md)** - Detailed component documentation
 - **[API Reference](API_REFERENCE.md)** - Complete API and utility reference
+- **[Script Usage Guide](SCRIPT_USAGE.md)** - Standalone utilities documentation
 
 ### For DevOps/Deployment
 - **[Deployment Guide](DEPLOYMENT.md)** - Production deployment strategies
 - **[System Requirements](#system-requirements)** - Technical requirements
 - **[Performance Optimization](#performance)** - Optimization guidelines
+
+### Technical Documentation
+- **[Final Status Report](FINAL_STATUS.md)** - Complete project status and achievements
+- **[Technical Assessment](TECHNICAL_ASSESSMENT.md)** - Specific technical issue resolution
+- **[Output Directory Structure](OUTPUT_DIRECTORY_STRUCTURE.md)** - Output organization
 
 ## 📖 Documentation Overview
 
@@ -58,7 +65,18 @@ This directory contains comprehensive documentation for the Research Discovery E
 
 **Target Audience**: Developers integrating with the platform, API consumers
 
-### 4. [Deployment Guide](DEPLOYMENT.md)
+### 4. [Script Usage Guide](SCRIPT_USAGE.md)
+**Purpose**: Complete documentation for all standalone utilities
+**Content**:
+- 7 comprehensive standalone scripts
+- CLI command references
+- Usage examples and workflows
+- Integration patterns
+- Performance characteristics
+
+**Target Audience**: Researchers, developers, automation specialists
+
+### 5. [Deployment Guide](DEPLOYMENT.md)
 **Purpose**: Production deployment strategies and configurations
 **Content**:
 - Static site deployment (Vercel, Netlify, GitHub Pages)
@@ -70,7 +88,7 @@ This directory contains comprehensive documentation for the Research Discovery E
 
 **Target Audience**: DevOps engineers, deployment managers, system administrators
 
-### 5. [Troubleshooting Guide](TROUBLESHOOTING.md)
+### 6. [Troubleshooting Guide](TROUBLESHOOTING.md)
 **Purpose**: Common issues and their solutions
 **Content**:
 - Installation and setup issues
@@ -82,27 +100,47 @@ This directory contains comprehensive documentation for the Research Discovery E
 
 **Target Audience**: All users, support teams, developers
 
-### 6. [Project Status](FINAL_STATUS.md)
-**Purpose**: Current project status and completion report
+### 7. [Startup Guide](STARTUP_GUIDE.md)
+**Purpose**: Complete setup and launch instructions
 **Content**:
-- Feature completion status
-- Technical achievements
+- Automated startup process
+- Manual startup alternatives
+- System requirements verification
+- Troubleshooting startup issues
+- Performance considerations
+
+**Target Audience**: New users, system administrators
+
+### 8. [Final Status Report](FINAL_STATUS.md)
+**Purpose**: Complete project status and achievements
+**Content**:
+- Implementation completion status
+- Technical achievements including modular scripts
 - Performance metrics
 - Future roadmap
 - Success metrics
+- Comprehensive testing results
 
 **Target Audience**: Project managers, stakeholders, contributors
 
-### 7. [Refactoring History](REFACTORING_PROGRESS.md)
-**Purpose**: Complete development history and improvements
+### 9. [Technical Assessment](TECHNICAL_ASSESSMENT.md)
+**Purpose**: Specific technical issue resolution documentation
 **Content**:
-- Development phases
-- Technical debt reduction
-- Code quality improvements
-- Architecture evolution
-- Lessons learned
+- deliver-protocol & deliver-summary issue resolution
+- Modularization improvements
+- Architecture benefits
+- Implementation details
 
-**Target Audience**: Developers, technical leads, project historians
+**Target Audience**: Technical leads, developers, troubleshooters
+
+### 10. [Output Directory Structure](OUTPUT_DIRECTORY_STRUCTURE.md)
+**Purpose**: Output organization and structure
+**Content**:
+- Directory organization patterns
+- Output types and formats
+- Archival strategies
+
+**Target Audience**: Users working with script outputs, system administrators
 
 ## 🚀 Getting Started
 
@@ -225,6 +263,7 @@ npm run dev
 - **📝 Content Management**: Dynamic markdown content processing
 - **🎬 Animation System**: Smooth transitions and visual feedback
 - **⚡ Performance Optimization**: Efficient handling of large datasets
+- **🛠️ Standalone Utilities**: 7 comprehensive scripts for research workflows
 
 ## 🎓 Learning Resources
 
@@ -234,12 +273,14 @@ npm run dev
 3. **Search Techniques**: Advanced filtering and discovery methods
 4. **Concept Creation**: Using the interactive design workflow
 5. **Agent Interaction**: Working with AI research assistants
+6. **Script Usage**: Leveraging standalone utilities for research workflows
 
 ### Best Practices
 - **Navigation Patterns**: Efficient exploration techniques
 - **Search Strategies**: Optimal discovery methods
 - **Workflow Optimization**: Productive research patterns
 - **Collaboration Methods**: Team-based knowledge creation
+- **Automation Techniques**: Using scripts for research pipelines
 
 ## 🤝 Contributing
 
@@ -258,6 +299,7 @@ npm run dev
 - **Performance Optimization**: Speed and efficiency improvements
 - **Documentation**: Guides, tutorials, and reference materials
 - **Testing**: Test coverage and quality assurance
+- **Standalone Utilities**: Script enhancements and new tools
 
 ## 📞 Support
 

@@ -65,30 +65,59 @@ The Discovery Engine embodies a human-AI co-creation process. It leverages the s
     *   `[citation_key]` links open corresponding publication files.
 *   **Simulated AI Agents:** The Agent Console provides a glimpse into the intended AI-assisted functionalities.
 
-## Getting Started
+## Quick Start
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd discovery-engine-platform 
-    ```
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    # or
-    yarn install
-    ```
-3.  **Verify Knowledge Base:**
-    *   Ensure your core knowledge Markdown files (`mechanisms.md`, `materials.md`, etc.) are present in the `public/KG/` directory.
-    *   Ensure `css.md` and `process.md` are also in `public/KG/` (or update paths in `cnmBuilder.ts` and `WIKI_BROWSER_CONFIG` in `App.tsx`).
-    *   Place markdown files for individual publications (e.g., `smith_etal_2023.md`) in `public/KG/publications/`.
-4.  **Run the development server:**
-    ```bash
-    npm run dev
-    # or
-    yarn dev
-    ```
-5.  Open your browser to the local address provided by Vite (e.g., `http://localhost:5173`).
+### Automated Setup (Recommended)
+```bash
+# Clone the repository
+git clone <repository-url>
+cd Research-Discovery-Engine/DE
+
+# Run the automated setup and launch
+python3 main.py
+```
+The `main.py` script will automatically verify requirements, install dependencies, and launch the application.
+
+### Manual Setup
+```bash
+# Navigate to the application directory
+cd DE
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Open http://localhost:5173 in your browser
+```
+
+### Verify Setup
+All system requirements and project structure will be automatically verified when using `python3 main.py`.
+
+## 📚 Documentation
+
+**Complete documentation is available in the [`docs/`](docs/) directory:**
+
+### For New Users
+- **[Startup Guide](docs/STARTUP_GUIDE.md)** - Complete setup and launch instructions
+- **[Documentation Index](docs/README.md)** - Complete navigation guide for all documentation
+
+### For Developers
+- **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Comprehensive developer documentation
+- **[Component Architecture](docs/COMPONENTS.md)** - Detailed component specifications
+- **[API Reference](docs/API_REFERENCE.md)** - Complete API and utility reference
+
+### For Researchers
+- **[Script Usage Guide](docs/SCRIPT_USAGE.md)** - 7 standalone utilities for research workflows
+- **[Technical Assessment](docs/TECHNICAL_ASSESSMENT.md)** - Technical implementation details
+
+### For Deployment
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment strategies
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Project Status
+- **[Final Status Report](docs/FINAL_STATUS.md)** - Complete project achievements and status
 
 ## Comprehensive LLM Integration & Testing
 
