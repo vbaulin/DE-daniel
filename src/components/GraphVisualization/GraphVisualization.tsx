@@ -275,7 +275,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             const nodeTypeKey = (node.type as NodeType) || 'Default';
             // Get the color from the lookup table or use default
             const baseColorHex = node.color || NODE_TYPE_COLORS[nodeTypeKey] || NODE_TYPE_COLORS['Default'];
-            const baseColorHex = node.color || NODE_TYPE_COLORS[nodeType] || NODE_TYPE_COLORS['Default'];
             let finalColor = new THREE.Color(baseColorHex);
 
             if (showLabels || isSelected || isHovered) {
