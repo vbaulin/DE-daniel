@@ -275,10 +275,18 @@ const NodeViewConnections: React.FC<{
           {activeTab === 'citations' && hasCitations && (
             <div className="flex flex-wrap gap-1">
               {exampleCitations.map((citation, index) => (
-                 <ReactMarkdown key={index} components={markdownComponents}>
-                    {/* Ensure the originalMatch is used if it's just the key, or construct the link */}
-                    {citation.originalMatch.startsWith('[') ? citation.originalMatch : `[${citation.key}]`} 
-                 </ReactMarkdown>
+                <button
+                  key={index}
+                  onClick={() => onPaperClick(citation.key)}
+                  className={`font-mono text-xs px-1.5 py-0.5 rounded-md mx-0.5 inline-flex items-center group transition-colors
+                              ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-teal-300 hover:text-teal-200'
+                                        : 'bg-slate-200 hover:bg-slate-300 text-teal-700 hover:text-teal-600'}`}
+                  title={`Open publication source: ${citation.key}.md`}
+                >
+                  <FileText size={10} className="mr-0.5 flex-shrink-0" />
+                  <span className="truncate max-w-[120px] sm:max-w-none group-hover:underline">{citation.key}</span>
+                  <ExternalLink size={10} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
               ))}
             </div>
           )}
