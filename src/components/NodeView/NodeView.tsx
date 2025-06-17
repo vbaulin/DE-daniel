@@ -339,17 +339,28 @@ const NodeView: React.FC<NodeViewProps> = ({
     h2: ({node: _n, ...props}: any) => <h2 id={props.id || slugify(React.Children.toArray(props.children).join(''))} className="text-lg font-semibold mt-3 mb-1.5 border-b pb-0.5 dark:border-slate-700" {...props}></h2>,
     h3: ({node: _n, ...props}: any) => <h3 id={props.id || slugify(React.Children.toArray(props.children).join(''))} className="text-base font-semibold mt-2 mb-1" {...props}></h3>,
     h4: ({node: _n, ...props}: any) => <h4 id={props.id || slugify(React.Children.toArray(props.children).join(''))} className="text-sm font-semibold mt-1.5 mb-0.5 flex items-center" {...props}><Hash size={13} className="mr-1 text-slate-500 dark:text-slate-400 opacity-70"/>{props.children}</h4>,
-    p: ({node: _n, children, ...props}: any) => {
-      // Check if children contain a <pre> or <code> element
-      const hasPreOrCode = React.Children.toArray(children).some(child => 
-        React.isValidElement(child) && (child.type === 'pre' || child.type === 'code')
-      );
-      
-      // If it contains pre/code, use a div instead of p to avoid nesting warning
-      return hasPreOrCode ? 
-        <div className="my-1.5 leading-relaxed text-sm" {...props}>{children}</div> : 
-        <p className="my-1.5 leading-relaxed text-sm" {...props}>{children}</p>;
-    },
+   p: ({node: _n, children, ...props}: any) => {
+     // Check if any child is a pre or code element, or contains one
+     const hasPreOrCode = React.Children.toArray(children).some(child => {
+       if (React.isValidElement(child)) {
+         if (child.type === 'pre' || child.type === 'code') return true;
+         // Check for nested pre/code in inline elements
+         if (child.props && child.props.children) {
+           const childArray = Array.isArray(child.props.children) ? 
+             child.props.children : [child.props.children];
+           return childArray.some(grandchild => 
+             React.isValidElement(grandchild) && 
+             (grandchild.type === 'pre' || grandchild.type === 'code')
+           );
+         }
+       }
+       return false;
+     });
+     
+     // If it contains or might contain pre/code, use a div instead of p
+     const Component = hasPreOrCode ? 'div' : 'p';
+     return <Component className="my-1.5 leading-relaxed text-sm" {...props}>{children}</Component>;
+   },
     ul: ({node: _n, ...props}: any) => <ul className="list-disc pl-5 my-1.5 space-y-0.5 text-sm" {...props}></ul>,
     // CORRECTED THE ol COMPONENT HERE
     ol: ({node: _n, ...props}: any) => <ol className="list-decimal pl-5 my-1.5 space-y-0.5 text-sm" {...props}></ol>,
