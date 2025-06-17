@@ -7,8 +7,6 @@
 
 import { AgentMessage, ConceptDesignState, NodeObject } from '../types';
 import { createLLMService } from '../llm/utils/factory';
-import fs from 'fs';
-import path from 'path';
 
 /**
  * Agent action payload interface for type safety
@@ -41,7 +39,8 @@ interface AgentResponse {
 export class AgentService {
   private messageCallback: (message: Omit<AgentMessage, 'id' | 'timestamp'>) => void;
   private llmService;
-  private knowledgeBase: string;
+  private knowledgeBase: string = "Knowledge base content will be loaded dynamically";
+  private isLoadingKnowledgeBase: boolean = false;
 
   /**
    * Initialize the agent service with a message callback
@@ -50,27 +49,19 @@ export class AgentService {
   constructor(messageCallback: (message: Omit<AgentMessage, 'id' | 'timestamp'>) => void) {
     this.messageCallback = messageCallback;
     this.llmService = createLLMService();
-    
-    // Load knowledge base content
-    try {
-      // In a real implementation, this would use fs.readFileSync
-      // For now, we'll initialize with a placeholder
-      this.knowledgeBase = "Knowledge base content will be loaded dynamically";
-      
-      // Attempt to load the knowledge base file if available
-      this.loadKnowledgeBase();
-    } catch (error) {
-      console.error("Error loading knowledge base:", error);
-      this.knowledgeBase = "Error loading knowledge base";
-    }
+
+    // Load knowledge base in the background
+    this.loadKnowledgeBase();
   }
   
   /**
    * Load the knowledge base content from file
    */
   private loadKnowledgeBase() {
+    if (this.isLoadingKnowledgeBase) return;
+    this.isLoadingKnowledgeBase = true;
+    
     try {
-      // In a browser environment, we'd use fetch instead
       fetch('/KG/merged_ISM.md')
         .then(response => {
           if (!response.ok) {
@@ -81,12 +72,15 @@ export class AgentService {
         .then(content => {
           this.knowledgeBase = content;
           console.log("Knowledge base loaded successfully");
+          this.isLoadingKnowledgeBase = false;
         })
         .catch(error => {
           console.error("Error loading knowledge base:", error);
+          this.isLoadingKnowledgeBase = false;
         });
     } catch (error) {
       console.error("Error in loadKnowledgeBase:", error);
+      this.isLoadingKnowledgeBase = false;
     }
   }
 

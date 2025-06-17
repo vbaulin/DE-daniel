@@ -20,7 +20,7 @@ async function testOpenRouter() {
   }
 
   // Check if API_PROVIDER is set to openrouter
-  const apiProvider = process.env.API_PROVIDER || 'openai';
+  const apiProvider = process.env.API_PROVIDER || import.meta.env?.VITE_API_PROVIDER || 'openai';
   if (apiProvider !== 'openrouter') {
     console.error('❌ API_PROVIDER is not set to "openrouter" in your .env file');
     console.error('Please set API_PROVIDER=openrouter in your .env file');
@@ -28,7 +28,7 @@ async function testOpenRouter() {
   }
 
   // Check if OPENROUTER_API_KEY is set
-  if (!process.env.OPENROUTER_API_KEY) {
+  if (!process.env.OPENROUTER_API_KEY && !import.meta.env?.VITE_OPENROUTER_API_KEY) {
     console.error('❌ OPENROUTER_API_KEY is not set in your .env file');
     console.error('Please set OPENROUTER_API_KEY=your_key_here in your .env file');
     process.exit(1);
