@@ -280,12 +280,12 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             if (showLabels || isSelected || isHovered) {
                 const sprite = new SpriteText(node.label || String(node.id));
                 sprite.color = isSelected || isHovered ? (darkMode ? '#000000' : '#FFFFFF') : (darkMode ? '#E2E8F0' : '#2D3748');
-                sprite.textHeight = isSelected ? 7 : isHovered ? 6 : 4;
+                sprite.textHeight = isSelected ? 8 : isHovered ? 7 : 5;
                 let bgColorHex = baseColorHex;
                 if (isSelected) bgColorHex = '#F6E05E'; 
                 else if (isHovered) bgColorHex = '#ED64A6'; 
                 sprite.backgroundColor = new THREE.Color(bgColorHex).getStyle();
-                sprite.padding = isSelected ? 1.5 : isHovered ? 1 : 0.5; 
+                sprite.padding = isSelected ? 2 : isHovered ? 1.5 : 1; 
                 sprite.borderRadius = 2;
                 sprite.material.opacity = isDimmed ? 0.3 : 1.0;
                 sprite.material.depthWrite = false; 

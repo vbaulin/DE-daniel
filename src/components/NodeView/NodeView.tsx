@@ -63,7 +63,6 @@ const NodeViewHeader: React.FC<{
       )}
       <div className="mt-1.5 space-x-2 text-[11px] sm:text-xs">
             <span className={`font-medium text-slate-500 dark:text-slate-400`}>Type: {type}</span>
-            {id && <span className={`font-mono text-slate-400 dark:text-slate-500`}>ID: {id}</span>}
             {status && <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold
                 ${status === 'Hypothetical' ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100' :
                   status === 'Proposed' ? 'bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100' :
