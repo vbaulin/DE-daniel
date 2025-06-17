@@ -1,19 +1,25 @@
 // src/components/GraphVisualization/GraphVisualization.tsx
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
-import ForceGraph3D, { NodeObject as FGNodeObject, LinkObject as FGLinkObject } from '3d-force-graph';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
+import ForceGraph3D from '3d-force-graph';
 import SpriteText from 'three-spritetext';
 import * as THREE from 'three';
 import * as d3 from 'd3';
 import { cloneDeep } from 'lodash';
 import { GraphData, NodeObject, LinkObject as CNMLinkObject, ConceptDesignState, NodeType, EdgeType } from '../../types';
 import { getNeighbors } from '../../utils/graphUtils';
-import { useStableMemo, useStableCallback, useDebouncedValue, useThrottle } from '../../utils/performanceUtils';
 
-interface GraphNode extends FGNodeObject, NodeObject {}
-interface GraphLink extends FGLinkObject {
+interface GraphNode extends NodeObject {
+  x?: number;
+  y?: number;
+  z?: number;
+  fx?: number;
+  fy?: number;
+  fz?: number;
+}
+
+interface GraphLink extends CNMLinkObject {
   source: string | GraphNode;
   target: string | GraphNode;
-  type?: CNMLinkObject['type'];
 }
 
 const NODE_TYPE_COLORS: Record<NodeType | 'Default', string> = {
@@ -40,6 +46,7 @@ const NODE_TYPE_COLORS: Record<NodeType | 'Default', string> = {
   'Documentation': '#D3D3D3', 
   'Default': '#A9A9A9', 
 };
+
 const LINK_TYPE_COLORS: Record<EdgeType | 'Default', string> = {
   'categorizes': '#A9A9A9',       
   'cites-source': '#6495ED',      
@@ -58,6 +65,7 @@ const LINK_TYPE_COLORS: Record<EdgeType | 'Default', string> = {
   'PackagedInArtifactEdge': '#E0FFFF',       
   'Default': '#708090',          
 };
+
 const WIKI_SOURCES_FOR_GV_GROUPING = [ 
     { typePrefix: 'Material', group: 1 }, { typePrefix: 'Mechanism', group: 2 },
     { typePrefix: 'Phenomenon', group: 3 }, { typePrefix: 'Documentation', group: 4 }, 
@@ -106,7 +114,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     return { nodes: validNodes, links: validLinks };
   }, [data]);
 
-
   const combinedGraphData = useMemo(() => {
     if (safeData.nodes.length === 0 && conceptDesignState.status === 'empty') {
       return { nodes: [], links: [] } as { nodes: GraphNode[], links: GraphLink[] };
@@ -149,7 +156,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     return { nodes: currentNodes, links: currentLinks };
   }, [safeData, conceptDesignState]);
 
-
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) return combinedGraphData;
     if (!combinedGraphData.nodes.length) return { nodes: [], links: [] };
@@ -188,7 +194,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     }
   }, [filteredData, onFilterComplete]); // Call ONLY when filteredData or onFilterComplete changes
 
-
   useEffect(() => { 
     if (!containerRef.current || graphRef.current) return;
     try {
@@ -197,7 +202,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         .height(containerRef.current.clientHeight)
         .enableNodeDrag(true)
         .showNavInfo(false)
-        .onNodeClick((node: FGNodeObject | null) => {
+        .onNodeClick((node: any | null) => {
             if (!node) {
                 onNodeSelect(null);
                 setNeighborNodes(new Set());
@@ -216,7 +221,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             graphRef.current.cameraPosition(cameraPosition, cameraLookAt, 1000);
             onNodeSelect(appNode);
         })
-        .onNodeHover((node: FGNodeObject | null) => {
+        .onNodeHover((node: any | null) => {
             const appNode = node as GraphNode | null;
             setHoveredNodeId(appNode ? String(appNode.id) : null);
 
@@ -241,12 +246,17 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
       graphRef.current = graph;
       graphRef.current(containerRef.current);
-      const handleResize = () => { if (containerRef.current && graphRef.current) { graphRef.current.width(containerRef.current.clientWidth).height(containerRef.current.clientHeight); }};
+      const handleResize = () => { 
+        if (containerRef.current && graphRef.current) { 
+          graphRef.current.width(containerRef.current.clientWidth).height(containerRef.current.clientHeight); 
+        }
+      };
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
-    } catch (error) { console.error("Error initializing 3D Force Graph:", error); }
+    } catch (error) { 
+      console.error("Error initializing 3D Force Graph:", error); 
+    }
   }, []);
-
 
   useEffect(() => { 
     if (!graphRef.current || !filteredData.nodes) return;
@@ -264,7 +274,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             if (neighborNodes.has(String(node.id))) return baseSize * 1.1;
             return baseSize;
          })
-        .nodeThreeObject((objNode: FGNodeObject) => {
+        .nodeThreeObject((objNode: any) => {
             const node = objNode as GraphNode;
             const isSelected = selectedNodeId === String(node.id);
             const isHovered = hoveredNodeId === String(node.id);
@@ -293,7 +303,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
                 return sprite;
             } else {
                 const geometrySize = Math.max(0.5, (graphRef.current.nodeVal()(node) as number) * 0.45); 
-                let geometry: THREE.BufferGeometry = new THREE.SphereGeometry(geometrySize, 16, 8); 
+                let geometry = new THREE.SphereGeometry(geometrySize, 16, 8); 
                 const sphereMaterial = new THREE.MeshLambertMaterial({
                     color: finalColor, 
                     transparent: true,
