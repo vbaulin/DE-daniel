@@ -24,20 +24,20 @@ export class LLMConfigManager {
    */
   loadFromEnvironment(): LLMConfig {
     // Determine which API provider to use
-    const apiProvider = (process.env.API_PROVIDER || 'openai').toLowerCase() as APIProvider;
+    const apiProvider = (import.meta.env.VITE_API_PROVIDER || 'openai').toLowerCase() as APIProvider;
     
     // Get the appropriate API key based on provider
     let apiKey: string | undefined;
     if (apiProvider === 'openrouter') {
-      apiKey = process.env.OPENROUTER_API_KEY;
+      apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENROUTER_API_KEY environment variable is required when using OpenRouter');
+        throw new Error('VITE_OPENROUTER_API_KEY environment variable is required when using OpenRouter');
       }
     } else {
       // Default to OpenAI
-      apiKey = process.env.OPENAI_API_KEY;
+      apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) {
-        throw new Error('OPENAI_API_KEY environment variable is required when using OpenAI');
+        throw new Error('VITE_OPENAI_API_KEY environment variable is required when using OpenAI');
       }
     }
     
@@ -48,17 +48,17 @@ export class LLMConfigManager {
       apiProvider,
       apiKey,
       model: apiProvider === 'openrouter' 
-        ? (process.env.OPENROUTER_MODEL as ModelType) || 'google/gemini-2.0-flash-exp:free'
-        : (process.env.OPENAI_MODEL as ModelType) || 'gpt-4o-mini',
-      maxTokens: parseInt(process.env.LLM_MAX_TOKENS || process.env.OPENAI_MAX_TOKENS || '2000'),
-      temperature: parseFloat(process.env.LLM_TEMPERATURE || process.env.OPENAI_TEMPERATURE || '0.7'),
+        ? (import.meta.env.VITE_OPENROUTER_MODEL as ModelType) || 'google/gemini-2.0-flash-exp:free'
+        : (import.meta.env.VITE_OPENAI_MODEL as ModelType) || 'gpt-4o-mini',
+      maxTokens: parseInt(import.meta.env.VITE_LLM_MAX_TOKENS || import.meta.env.VITE_OPENAI_MAX_TOKENS || '2000'),
+      temperature: parseFloat(import.meta.env.VITE_LLM_TEMPERATURE || import.meta.env.VITE_OPENAI_TEMPERATURE || '0.7'),
       baseURL: apiProvider === 'openrouter' 
         ? 'https://openrouter.ai/api/v1'
-        : process.env.OPENAI_BASE_URL,
-      organization: process.env.OPENAI_ORGANIZATION,
-      project: process.env.OPENAI_PROJECT,
-      maxRetries: parseInt(process.env.LLM_MAX_RETRIES || '5'),
-      retryDelay: parseInt(process.env.LLM_RETRY_DELAY || '5000')
+        : import.meta.env.VITE_OPENAI_BASE_URL,
+      organization: import.meta.env.VITE_OPENAI_ORGANIZATION,
+      project: import.meta.env.VITE_OPENAI_PROJECT,
+      maxRetries: parseInt(import.meta.env.VITE_LLM_MAX_RETRIES || '5'),
+      retryDelay: parseInt(import.meta.env.VITE_LLM_RETRY_DELAY || '5000')
     };
 
     this.validateConfig(this.config);
@@ -195,4 +195,4 @@ export class LLMConfigManager {
 }
 
 // Export singleton instance
-export const llmConfig = LLMConfigManager.getInstance(); 
+export const llmConfig = LLMConfigManager.getInstance();
