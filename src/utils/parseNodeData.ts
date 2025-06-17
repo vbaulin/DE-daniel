@@ -70,7 +70,9 @@ export const preprocessMarkdownForDisplayUtil = (content: string, currentFileKey
 export interface ParsedNodeDetails {
   title: string;
   humanReadableTitle?: string;
+  idForDisplay?: string;
   description: string;
+  mainDescription?: string;
   input: string;
   output: string;
   processPrimitives: string;
@@ -87,7 +89,9 @@ export const parseNodeDetails = (node: NodeObject, allNodes: NodeObject[]): Pars
   const details: ParsedNodeDetails = {
     title: node.label || node.id,
     humanReadableTitle: undefined,
+    idForDisplay: node.id,
     description: '',
+    mainDescription: '',
     input: '',
     output: '',
     processPrimitives: '',
@@ -222,6 +226,8 @@ export const parseNodeDetails = (node: NodeObject, allNodes: NodeObject[]): Pars
       details.mainDescription = preprocessMarkdownForDisplayUtil(`*No primary description content found for ${node.label || node.id}.*`, node.sourceFileKey, allNodes);
     }
   }
+  // Ensure mainDescription is set
+  details.mainDescription = details.description;
 
   return details;
 };

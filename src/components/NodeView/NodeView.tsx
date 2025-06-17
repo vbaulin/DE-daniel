@@ -24,7 +24,7 @@ interface NodeViewProps {
 const NodeViewHeader: React.FC<{ 
     title: string; 
     subtitle?: string; 
-    id: string, 
+    id?: string, 
     type?: NodeObject['type'], 
     status?: NodeObject['status'], 
     sourceFileKey?: string, 
@@ -63,7 +63,7 @@ const NodeViewHeader: React.FC<{
       )}
       <div className="mt-1.5 space-x-2 text-[11px] sm:text-xs">
             <span className={`font-medium text-slate-500 dark:text-slate-400`}>Type: {type}</span>
-            <span className={`font-mono text-slate-400 dark:text-slate-500`}>ID: {id}</span>
+            {id && <span className={`font-mono text-slate-400 dark:text-slate-500`}>ID: {id}</span>}
             {status && <span className={`px-1.5 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold
                 ${status === 'Hypothetical' ? 'bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100' :
                   status === 'Proposed' ? 'bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100' :
@@ -174,7 +174,7 @@ const NodeViewAttributes: React.FC<{
 };
 
 const NodeViewConnections: React.FC<{
-  connectionsText?: string;
+  connectionsText?: string | null;
   relatedConcepts: ParsedNodeDetails['relatedConcepts'];
   exampleCitations: ParsedNodeDetails['exampleCitations'];
   graphLinks: { [key: string]: { link: CNMLinkObject, targetNode: NodeObject }[] };
@@ -186,7 +186,7 @@ const NodeViewConnections: React.FC<{
   const getInitialActiveTab = () => {
     if (relatedConcepts && relatedConcepts.length > 0) return 'related';
     if (Object.keys(graphLinks).length > 0) return 'graph';
-    if (connectionsText && connectionsText.trim() !== "") return 'text';
+    if (connectionsText && connectionsText.trim && connectionsText.trim() !== "") return 'text';
     if (exampleCitations && exampleCitations.length > 0) return 'citations';
     return 'related'; 
   };
@@ -198,7 +198,7 @@ const NodeViewConnections: React.FC<{
 
   const hasRelated = relatedConcepts && relatedConcepts.length > 0;
   const hasGraphLinks = Object.keys(graphLinks).length > 0;
-  const hasTextLinks = !!connectionsText && connectionsText.trim() !== "";
+  const hasTextLinks = !!connectionsText && typeof connectionsText === 'string' && connectionsText.trim() !== "";
   const hasCitations = exampleCitations && exampleCitations.length > 0;
 
   if (!hasRelated && !hasGraphLinks && !hasTextLinks && !hasCitations) return null;
@@ -299,6 +299,8 @@ const NodeView: React.FC<NodeViewProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const parsedDetails = useMemo(() => parseNodeDetails(node, allNodes), [node, allNodes]);
 
+  // Ensure we're using the correct description field
+  const mainDescription = parsedDetails.mainDescription || parsedDetails.description;
   useEffect(() => {
     const targetSlug = (window as any).__targetSectionSlugForNodeView;
     if (targetSlug && scrollRef.current) {
@@ -376,7 +378,7 @@ const NodeView: React.FC<NodeViewProps> = ({
       />
       
       <NodeViewDescription
-        description={parsedDetails.mainDescription}
+        description={mainDescription}
         darkMode={darkMode}
         markdownComponents={nodeViewMarkdownComponents}
       />
