@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react']
+    exclude: ['lucide-react'],
+    // Fix for "Multiple instances of Three.js being imported" warning
+    dedupe: ['three']
   },
   build: {
     rollupOptions: {

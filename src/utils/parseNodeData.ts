@@ -101,7 +101,7 @@ export const parseNodeDetails = (node: NodeObject, allNodes: NodeObject[]): Pars
   };
 
   if (!node.description) {
-    details.description = preprocessMarkdownForDisplayUtil(`*No detailed description available for ${node.label || node.id}.*`, node.sourceFileKey, allNodes);
+    details.mainDescription = preprocessMarkdownForDisplayUtil(`*No detailed description available for ${node.label || node.id}.*`, node.sourceFileKey, allNodes);
     return details;
   }
 
@@ -213,8 +213,14 @@ export const parseNodeDetails = (node: NodeObject, allNodes: NodeObject[]): Pars
     }
   }
   
-  if (!details.description.trim()) {
-    details.description = preprocessMarkdownForDisplayUtil(`*No primary description content found for ${node.label || node.id}.*`, node.sourceFileKey, allNodes);
+  // Ensure we always have a description
+  if (!details.mainDescription || !details.mainDescription.trim()) {
+    // Try to use the full node description if available
+    if (node.description && node.description.trim()) {
+      details.mainDescription = preprocessMarkdownForDisplayUtil(node.description, node.sourceFileKey, allNodes);
+    } else {
+      details.mainDescription = preprocessMarkdownForDisplayUtil(`*No primary description content found for ${node.label || node.id}.*`, node.sourceFileKey, allNodes);
+    }
   }
 
   return details;
