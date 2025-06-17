@@ -1,12 +1,10 @@
 #!/usr/bin/env tsx
-/**
- * Simple OpenAI API Connection Test
- */
 
 import { loadEnvironment } from './load-env';
+import { createLLMService, createProviderService } from '../src/llm/utils/factory';
 
-async function testOpenAI() {
-  console.log('🤖 Testing OpenAI API Connection...\n');
+async function testConnection() {
+  console.log('🔄 Testing LLM API Connection...\n');
 
   // Load environment variables
   const envResult = loadEnvironment();
@@ -14,59 +12,49 @@ async function testOpenAI() {
     console.error('❌ Environment loading failed:', envResult.message);
     process.exit(1);
   }
-  
-  console.log('✅', envResult.message);
-  if (envResult.apiKeyPreview) {
-    console.log('🔑 API Key:', envResult.apiKeyPreview);
-  }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-  
-  console.log('🤖 Model:', model);
-  console.log();
+  console.log('✅ Environment loaded successfully');
+  console.log('🔑 API Key:', envResult.apiKeyPreview);
 
-  if (!apiKey) {
-    console.error('❌ OPENAI_API_KEY not found in environment');
-    process.exit(1);
-  }
+  // Determine which API provider to use
+  const apiProvider = process.env.API_PROVIDER || 'openai';
+  console.log(`🤖 Using API Provider: ${apiProvider}`);
 
   try {
-    console.log('📡 Making test request...');
-    
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          {
-            role: 'user',
-            content: 'Say "Hello, Research Discovery Engine!" in exactly those words.'
-          }
-        ],
-        max_tokens: 50
-      })
-    });
+    // Create appropriate LLM service based on provider
+    const llmService = apiProvider === 'openrouter'
+      ? createProviderService('openrouter')
+      : createLLMService();
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`API request failed: ${errorData.error?.message || response.statusText}`);
+    console.log('🔄 Testing connection...');
+    
+    // Test connection
+    const isConnected = await llmService.testConnection();
+    
+    if (isConnected) {
+      console.log(`✅ Successfully connected to ${apiProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API`);
+      
+      // Send a simple test request
+      console.log('🔄 Sending test request...');
+      
+      const response = await llmService.generateText({
+        userPrompt: 'Say "Hello from the Research Discovery Engine!" and nothing else.'
+      });
+      
+      if (response.success) {
+        console.log('✅ Test request successful');
+        console.log('📝 Response:', response.content);
+        console.log('📊 Token usage:', response.usage);
+        console.log('⏱️  Response time:', response.metadata.duration, 'ms');
+      } else {
+        console.error('❌ Test request failed:', response.error);
+      }
+    } else {
+      console.error(`❌ Failed to connect to ${apiProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API`);
     }
-
-    const data = await response.json();
-    console.log('✅ SUCCESS!');
-    console.log('📝 Response:', data.choices[0].message.content);
-    console.log('🔢 Tokens used:', data.usage.total_tokens);
-    
   } catch (error) {
-    console.log('❌ FAILED!');
-    console.log('💥 Error:', error.message);
-    process.exit(1);
+    console.error(`❌ Error testing ${apiProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} connection:`, error);
   }
 }
 
-testOpenAI(); 
+testConnection();
