@@ -7,7 +7,7 @@
  */
 
 import { loadEnvironment } from './load-env';
-import { createKnowledgeService } from '../src/llm/utils/factory';
+import { createKnowledgeService, createProviderService } from '../src/llm/utils/factory';
 import { KnowledgeProcessingLLMRequest } from '../src/llm/types';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -110,7 +110,12 @@ async function processKnowledge(sourceText: string, options: CliOptions): Promis
   }
 
   try {
-    const knowledgeService = createKnowledgeService();
+    // Create appropriate service based on provider
+    const apiProvider = process.env.API_PROVIDER || 'openai';
+    const knowledgeService = apiProvider === 'openrouter'
+      ? createProviderService('openrouter')
+      : createKnowledgeService();
+      
     const domain = options.domain || 'materials science';
     const processingType = options.type || 'extract_concepts';
     const outputFormat = options.format || 'structured';
@@ -150,6 +155,7 @@ async function processKnowledge(sourceText: string, options: CliOptions): Promis
         extractedData: result.extractedData || {}
       },
       metadata: {
+        provider: apiProvider,
         model: result.metadata.model,
         tokenUsage: result.usage,
         processingTime: result.metadata.duration,
@@ -194,6 +200,7 @@ function formatOutput(data: any, format: string): string {
 **Domain:** ${data.processing.domain}
 **Timestamp:** ${data.metadata.timestamp}
 **Model:** ${data.metadata.model}
+**Provider:** ${data.metadata.provider}
 
 ## Source Text (Preview)
 ${data.sourceText}
@@ -267,6 +274,7 @@ function saveHeadlessOutput(data: any, format: string, options: CliOptions): str
     timestamp: new Date().toISOString(),
     processingType: data.processing.type,
     domain: data.processing.domain,
+    apiProvider: process.env.API_PROVIDER || 'openai',
     llmModel: data.metadata.model,
     tokenUsage: data.metadata.tokenUsage,
     processingTime: data.metadata.processingTime,
@@ -291,13 +299,14 @@ async function main() {
     return;
   }
 
-  console.log('🧠 LLM-Enhanced Knowledge Processing Tool\n');
+  const apiProvider = process.env.API_PROVIDER || 'openai';
+  console.log(`🧠 LLM-Enhanced Knowledge Processing Tool (using ${apiProvider})\n`);
 
   // Load and verify environment variables
   const envResult = loadEnvironment();
   if (!envResult.success) {
     console.error('❌ Error:', envResult.message);
-    console.error('Please set your OpenAI API key in the .env file');
+    console.error(`Please set your ${apiProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key in the .env file`);
     process.exit(1);
   }
   
