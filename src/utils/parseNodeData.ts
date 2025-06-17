@@ -62,7 +62,7 @@ export const preprocessMarkdownForDisplayUtil = (content: string, currentFileKey
 
     const citationRegex = /(?<![`[![#<A-Za-z0-9\-_~])\[([a-zA-Z0-9_-]+(?:_\d{4}(?:[a-zA-Z_-]\w*)?)?)\](?![(#])/g;
     processed = processed.replace(citationRegex, (match, key) => {
-        // Ensure we're using the original match format for the link text
+        // Create a proper citation link that will open the publication file
         return `[${key}](#CITATION__${key})`;
     });
     return processed;

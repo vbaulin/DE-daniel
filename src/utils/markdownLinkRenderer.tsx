@@ -28,14 +28,14 @@ export const createMarkdownLinkRenderer = (rendererProps: LinkRendererSharedProp
         const refKey = href.substring(11);
         return (
             <button
-                className={`font-mono text-xs px-1.5 py-0.5 rounded-md mx-0.5 inline-flex items-center group transition-colors
+                className={`font-mono text-sm px-1.5 py-0.5 rounded-md mx-0.5 inline-flex items-center group transition-colors
                             ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-teal-300 hover:text-teal-200'
                                       : 'bg-slate-200 hover:bg-slate-300 text-teal-700 hover:text-teal-600'}`}
                 onClick={() => onPaperClick(refKey)} 
                 title={`Open publication source: ${refKey}.md`} 
                 {...props} >
                 <FileText size={10} className="mr-0.5 flex-shrink-0" />
-                <span className="truncate max-w-[120px] sm:max-w-none group-hover:underline">{linkText || refKey}</span>
+                <span className="group-hover:underline">{linkText || refKey}</span>
                 <ExternalLink size={10} className="ml-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
         );
