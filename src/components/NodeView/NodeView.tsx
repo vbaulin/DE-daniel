@@ -85,7 +85,7 @@ const NodeViewHeader: React.FC<{
 const NodeViewDescription: React.FC<{ description: string; darkMode: boolean; markdownComponents: any; }> =
  ({ description, darkMode, markdownComponents }) => {
   if (!description || description.trim() === '' || description.startsWith('*No detailed description')) {
-    return <p className="italic text-sm text-slate-500 dark:text-slate-400 my-4">No primary description content provided for this node.</p>;
+    return <p className="italic text-sm text-slate-500 dark:text-slate-400 my-4">No primary description content provided for this node. Select a different node to view its details.</p>;
   }
   return (
     <section className="mb-5" aria-labelledby="node-main-description">

@@ -271,7 +271,9 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             const isDirectNeighbor = neighborNodes.has(String(node.id)) && (hoveredNodeId !== null || selectedNodeId !== null);
             const isContextActive = hoveredNodeId !== null || selectedNodeId !== null;
             const isDimmed = isContextActive && !isSelected && !isHovered && !isDirectNeighbor;
-            const baseColorHex = node.color || NODE_TYPE_COLORS[node.type || 'Default'] || NODE_TYPE_COLORS['Default'];
+            // Fix: Ensure we're using the correct node type for color lookup
+            const nodeType = node.type as NodeType || 'Default';
+            const baseColorHex = node.color || NODE_TYPE_COLORS[nodeType] || NODE_TYPE_COLORS['Default'];
             let finalColor = new THREE.Color(baseColorHex);
 
             if (showLabels || isSelected || isHovered) {
@@ -292,7 +294,8 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
                 const geometrySize = Math.max(0.5, (graphRef.current.nodeVal()(node) as number) * 0.45); 
                 let geometry: THREE.BufferGeometry = new THREE.SphereGeometry(geometrySize, 16, 8); 
                 const sphereMaterial = new THREE.MeshLambertMaterial({
-                    color: finalColor, transparent: true,
+                    color: finalColor, 
+                    transparent: true,
                     opacity: isDimmed ? 0.1 : (isDirectNeighbor ? 0.9 : 0.75)
                 });
                 return new THREE.Mesh(geometry, sphereMaterial);
