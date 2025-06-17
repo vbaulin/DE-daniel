@@ -28,6 +28,13 @@ export class LLMService {
   private analytics: LLMAnalytics;
   private defaultRetryPolicy: RetryPolicy;
 
+  /**
+   * Get current configuration
+   */
+  getConfig(): LLMConfig {
+    return { ...this.config };
+  }
+
   constructor(config: LLMConfig) {
     this.config = config;
     
