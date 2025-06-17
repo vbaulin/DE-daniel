@@ -421,8 +421,8 @@ export class LLMService {
           retryPolicy.maxDelay
         );
 
-        console.log(`Retry attempt ${attempt + 1}/${retryPolicy.maxRetries} after ${delay}ms delay`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        console.log(`Retry attempt ${attempt + 1}/${retryPolicy.maxRetries} after ${delay}ms delay. Error: ${llmError.message}`);
+        await new Promise<void>(resolve => setTimeout(resolve, delay));
       }
     }
     
@@ -430,6 +430,19 @@ export class LLMService {
   }
 
   private handleError(error: any): LLMError {
+    // Handle OpenRouter-specific errors
+    if (this.config.apiProvider === 'openrouter') {
+      if (error?.status === 429 || (error?.error && error?.error.type === 'insufficient_quota')) {
+        return {
+          type: 'rate_limit_error',
+          message: 'OpenRouter rate limit exceeded or insufficient quota',
+          code: error.error?.code,
+          statusCode: error.status || 429,
+          retryAfter: error.headers?.['retry-after'] ? parseInt(error.headers['retry-after']) : 5
+        };
+      }
+    }
+    
     // Handle OpenRouter-specific errors
     if (this.config.apiProvider === 'openrouter') {
       if (error?.status === 429 || (error?.error && error?.error.type === 'insufficient_quota')) {
