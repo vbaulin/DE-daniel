@@ -48,7 +48,22 @@ export class AgentService {
    */
   constructor(messageCallback: (message: Omit<AgentMessage, 'id' | 'timestamp'>) => void) {
     this.messageCallback = messageCallback;
-    this.llmService = createLLMService();
+   
+   // Initialize LLM service with error handling
+   try {
+     this.llmService = createLLMService({
+       dangerouslyAllowBrowser: true
+     });
+     console.log("LLM service initialized successfully");
+   } catch (error) {
+     console.error("Error initializing LLM service:", error);
+     // Send error message to user
+     this.messageCallback({
+       sourceAgent: "System",
+       type: "error",
+       content: "Failed to initialize LLM service. Using simulated responses instead."
+     });
+   }
 
     // Load knowledge base in the background
     this.loadKnowledgeBase();
@@ -201,6 +216,19 @@ export class AgentService {
     conceptState?: ConceptDesignState,
     graphData?: { nodes: NodeObject[] }
   ): AgentResponse {
+    // Check if LLM service is available
+    if (!this.llmService) {
+      // Fall back to simulated response
+      console.log("LLM service not available, using simulated response");
+      return this.getSimulatedResponse(action, payload, conceptState, graphData);
+    }
+    
+    // Check if LLM service is available
+    if (!this.llmService) {
+      // Fall back to simulated response
+      return this.getSimulatedResponse(action, payload, conceptState, graphData);
+    }
+    
     // Create initial response message
     const initialMessage = this.createInitialMessage(action, payload, conceptState);
     
@@ -315,6 +343,10 @@ export class AgentService {
     conceptState?: ConceptDesignState,
     graphData?: { nodes: NodeObject[] }
   ): Promise<string> {
+    if (!this.llmService) {
+      throw new Error("LLM service not initialized");
+    }
+    
     // Build prompt based on action type
     const prompt = this.buildPrompt(action, payload, conceptState, graphData);
     
@@ -913,6 +945,34 @@ FORMAT YOUR RESPONSE AS:
     if (action.startsWith('generate-concept') || action.startsWith('package-artifact')) return 'ConceptAgent';
     if (action.startsWith('start-design') || action.startsWith('add-component') || action.startsWith('initiate-new-concept')) return 'Orchestration Agent';
     return 'Discovery Engine';
+  }
+  
+  /**
+   * Get simulated response for when LLM is not available
+   */
+  private getSimulatedResponse(
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState,
+    graphData?: { nodes: NodeObject[] }
+  ): AgentResponse {
+    // Fall back to the original simulation methods
+    switch (action) {
+      case 'suggest-compatible-components':
+        return this.handleSuggestComponents(conceptState);
+      case 'find-analogies':
+        return this.handleFindAnalogies(conceptState);
+      case 'check-consistency':
+        return this.handleCheckConsistency(conceptState);
+      case 'generate-protocol-outline':
+        return this.handleGenerateProtocol(conceptState);
+      case 'generate-concept-summary':
+        return this.handleGenerateSummary(conceptState);
+      case 'launch-exploratory-analysis':
+        return this.handleExploratoryAnalysis(payload, conceptState);
+      default:
+        return this.handleGenericAction(action, payload);
+    }
   }
 }
 
