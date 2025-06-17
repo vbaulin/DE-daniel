@@ -6,7 +6,7 @@
  */
 
 import OpenAI from 'openai';
-import { 
+import {
   LLMConfig, 
   LLMRequest, 
   LLMResult, 
@@ -18,7 +18,8 @@ import {
   LLMRequestConfig,
   ModelType,
   LLMEventListener,
-  LLMServiceEvent
+  LLMServiceEvent,
+  APIProvider
 } from './types';
 
 export class LLMService {
@@ -29,12 +30,23 @@ export class LLMService {
 
   constructor(config: LLMConfig) {
     this.config = config;
-    this.openai = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-      organization: config.organization,
-      project: config.project,
-    });
+    
+    // Initialize OpenAI client with appropriate configuration
+    const openaiConfig: any = {
+      apiKey: config.apiKey
+    };
+    
+    // Add provider-specific configuration
+    if (config.apiProvider === 'openrouter') {
+      openaiConfig.baseURL = 'https://openrouter.ai/api/v1';
+    } else {
+      // Standard OpenAI configuration
+      openaiConfig.baseURL = config.baseURL;
+      openaiConfig.organization = config.organization;
+      openaiConfig.project = config.project;
+    }
+    
+    this.openai = new OpenAI(openaiConfig);
 
     this.analytics = {
       totalRequests: 0,
@@ -48,14 +60,15 @@ export class LLMService {
     };
 
     this.defaultRetryPolicy = {
-      maxRetries: 3,
-      baseDelay: 1000,
-      maxDelay: 10000,
+      maxRetries: config.maxRetries || 5,
+      baseDelay: config.retryDelay || 5000,
+      maxDelay: 30000,
       backoffMultiplier: 2,
       retryCondition: (error: LLMError) => 
         error.type === 'rate_limit_error' || 
         error.type === 'network_error' ||
-        (error.type === 'api_error' && error.statusCode !== undefined && error.statusCode >= 500)
+        (error.type === 'api_error' && error.statusCode !== undefined && 
+         (error.statusCode >= 500 || error.statusCode === 429))
     };
   }
 
@@ -103,7 +116,8 @@ export class LLMService {
 
       // Make the API call with retry logic
       const response = await this.makeRequestWithRetry(async () => {
-        return await this.openai.chat.completions.create({
+        // Create request parameters based on provider
+        const requestParams: any = {
           model: finalConfig.model || this.config.model,
           messages,
           max_tokens: finalConfig.maxTokens || this.config.maxTokens,
@@ -115,7 +129,16 @@ export class LLMService {
           stream: false,
           seed: finalConfig.seed,
           logit_bias: finalConfig.logitBias,
-        });
+        };
+        
+        // Add OpenRouter-specific headers if needed
+        const headers: Record<string, string> = {};
+        if (this.config.apiProvider === 'openrouter') {
+          headers['HTTP-Referer'] = 'https://research-discovery-engine.example.com';
+          headers['X-Title'] = 'Research Discovery Engine';
+        }
+        
+        return await this.openai.chat.completions.create(requestParams, { headers });
       });
 
       const endTime = Date.now();
@@ -192,13 +215,22 @@ export class LLMService {
 
       const finalConfig = this.mergeConfig(request.config);
 
-      const stream = await this.openai.chat.completions.create({
+      // Create request parameters based on provider
+      const requestParams: any = {
         model: finalConfig.model || this.config.model,
         messages,
         max_tokens: finalConfig.maxTokens || this.config.maxTokens,
         temperature: finalConfig.temperature ?? this.config.temperature,
-        stream: true,
-      });
+        stream: true
+      };
+      
+      // Add OpenRouter-specific headers if needed
+      const headers: Record<string, string> = {};
+      if (this.config.apiProvider === 'openrouter') {
+        headers['HTTP-Referer'] = 'https://research-discovery-engine.example.com';
+        headers['X-Title'] = 'Research Discovery Engine';
+      }
+      const stream = await this.openai.chat.completions.create(requestParams, { headers });
 
       for await (const chunk of stream) {
         const content = chunk.choices[0]?.delta?.content;
@@ -307,12 +339,23 @@ export class LLMService {
    */
   updateConfig(newConfig: Partial<LLMConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    this.openai = new OpenAI({
-      apiKey: this.config.apiKey,
-      baseURL: this.config.baseURL,
-      organization: this.config.organization,
-      project: this.config.project,
-    });
+    
+    // Reinitialize OpenAI client with updated configuration
+    const openaiConfig: any = {
+      apiKey: this.config.apiKey
+    };
+    
+    // Add provider-specific configuration
+    if (this.config.apiProvider === 'openrouter') {
+      openaiConfig.baseURL = 'https://openrouter.ai/api/v1';
+    } else {
+      // Standard OpenAI configuration
+      openaiConfig.baseURL = this.config.baseURL;
+      openaiConfig.organization = this.config.organization;
+      openaiConfig.project = this.config.project;
+    }
+    
+    this.openai = new OpenAI(openaiConfig);
   }
 
   /**
@@ -320,12 +363,19 @@ export class LLMService {
    */
   async testConnection(): Promise<boolean> {
     try {
+      const headers: Record<string, string> = {};
+      if (this.config.apiProvider === 'openrouter') {
+        headers['HTTP-Referer'] = 'https://research-discovery-engine.example.com';
+        headers['X-Title'] = 'Research Discovery Engine';
+      }
+      
       const response = await this.openai.chat.completions.create({
         model: this.config.model,
         messages: [{ role: 'user', content: 'Hello' }],
         max_tokens: 5,
         temperature: 0
-      });
+      }, { headers });
+      
       return response.choices.length > 0;
     } catch {
       return false;
@@ -371,6 +421,7 @@ export class LLMService {
           retryPolicy.maxDelay
         );
 
+        console.log(`Retry attempt ${attempt + 1}/${retryPolicy.maxRetries} after ${delay}ms delay`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -379,6 +430,19 @@ export class LLMService {
   }
 
   private handleError(error: any): LLMError {
+    // Handle OpenRouter-specific errors
+    if (this.config.apiProvider === 'openrouter') {
+      if (error?.status === 429 || (error?.error && error?.error.type === 'insufficient_quota')) {
+        return {
+          type: 'rate_limit_error',
+          message: 'OpenRouter rate limit exceeded or insufficient quota',
+          code: error.error?.code,
+          statusCode: error.status || 429,
+          retryAfter: error.headers?.['retry-after'] ? parseInt(error.headers['retry-after']) : 5
+        };
+      }
+    }
+    
     if (error?.error?.type === 'insufficient_quota') {
       return {
         type: 'rate_limit_error',
@@ -466,16 +530,29 @@ export class LLMService {
     if (!usage) return 0;
 
     // Rough cost estimates (USD per 1K tokens) - update these as needed
-    const costPerModel: Record<string, { input: number; output: number }> = {
+    const openaiCosts: Record<string, { input: number; output: number }> = {
       'gpt-4o': { input: 0.005, output: 0.015 },
       'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
       'gpt-4-turbo': { input: 0.01, output: 0.03 },
       'gpt-4': { input: 0.03, output: 0.06 },
       'gpt-3.5-turbo': { input: 0.0015, output: 0.002 }
     };
+    
+    // OpenRouter models are mostly free tier or have different pricing
+    const openrouterCosts: Record<string, { input: number; output: number }> = {
+      'google/gemini-2.0-flash-exp:free': { input: 0, output: 0 },
+      'google/gemini-2.0-pro-exp-02-05:free': { input: 0, output: 0 },
+      'deepseek/deepseek-r1-distill-llama-70b:free': { input: 0, output: 0 },
+      'openrouter/quasar-alpha': { input: 0, output: 0 }
+    };
+    
+    // Select the appropriate cost model based on provider
+    const costPerModel = this.config.apiProvider === 'openrouter' 
+      ? openrouterCosts 
+      : openaiCosts;
 
     const model = response.model;
-    const costs = costPerModel[model] || costPerModel['gpt-3.5-turbo'];
+    const costs = costPerModel[model] || { input: 0, output: 0 };
     
     const inputCost = (usage.prompt_tokens / 1000) * costs.input;
     const outputCost = (usage.completion_tokens / 1000) * costs.output;

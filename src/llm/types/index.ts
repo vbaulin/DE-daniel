@@ -4,8 +4,12 @@
  * Comprehensive types for flexible LLM integration with OpenAI API
  */
 
+// API Provider Types
+export type APIProvider = 'openai' | 'openrouter';
+
 // Core LLM Configuration Types
 export interface LLMConfig {
+  apiProvider: APIProvider;
   apiKey: string;
   model: ModelType;
   maxTokens: number;
@@ -13,6 +17,8 @@ export interface LLMConfig {
   baseURL?: string;
   organization?: string;
   project?: string;
+  maxRetries?: number;
+  retryDelay?: number;
 }
 
 // Supported Model Types
@@ -23,6 +29,11 @@ export type ModelType =
   | 'gpt-4'
   | 'gpt-3.5-turbo'
   | 'gpt-3.5-turbo-16k'
+  | 'google/gemini-2.0-flash-exp:free'
+  | 'google/gemini-2.0-pro-exp-02-05:free'
+  | 'google/gemini-2.0-flash-thinking-exp:free'
+  | 'deepseek/deepseek-r1-distill-llama-70b:free'
+  | 'openrouter/quasar-alpha'
   | string; // Allow custom models
 
 // Message Types
