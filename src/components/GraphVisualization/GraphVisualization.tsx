@@ -273,8 +273,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             const isDimmed = isContextActive && !isSelected && !isHovered && !isDirectNeighbor;
             // Fix: Ensure we're using the correct node type for color lookup
             const nodeType = node.type as NodeType || 'Default';
-            // Fix: Ensure we're using the correct node type for color lookup
-            const nodeType = node.type as NodeType || 'Default';
             const baseColorHex = node.color || NODE_TYPE_COLORS[nodeType] || NODE_TYPE_COLORS['Default'];
             let finalColor = new THREE.Color(baseColorHex);
 
