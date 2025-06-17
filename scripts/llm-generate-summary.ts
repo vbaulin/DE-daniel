@@ -7,7 +7,7 @@
  */
 
 import { loadEnvironment } from './load-env';
-import { createSummaryService } from '../src/llm/utils/factory';
+import { createSummaryService, createProviderService } from '../src/llm/utils/factory';
 import { createMockConceptDesignState } from '../src/utils/testUtils';
 import { SummaryLLMRequest } from '../src/llm/types';
 import * as fs from 'fs';
@@ -15,6 +15,7 @@ import * as path from 'path';
 
 interface CliOptions {
   concept?: string;
+  domain?: string;
   format?: 'markdown' | 'json';
   headless?: boolean;
   headlessOutput?: string;
@@ -32,6 +33,9 @@ function parseArgs(): CliOptions {
     switch (arg) {
       case '--concept':
         options.concept = args[++i];
+        break;
+      case '--domain':
+        options.domain = args[++i];
         break;
       case '--format':
         const format = args[++i];
@@ -67,6 +71,7 @@ Usage:
 
 Options:
   --concept name           Research concept to summarize
+  --domain domain          Research domain (e.g., materials science, chemistry)
   --format format         Output format: markdown, json (default: markdown)
   --headless              Run in headless mode (no interactive prompts)
   --headless-output dir   Directory for headless output
@@ -91,8 +96,11 @@ async function generateLLMSummary(concept: string, options: CliOptions): Promise
   }
 
   try {
-    // Create LLM service
-    const summaryService = createSummaryService();
+    // Create LLM service based on provider
+    const apiProvider = process.env.API_PROVIDER || 'openai';
+    const summaryService = apiProvider === 'openrouter'
+      ? createProviderService('openrouter')
+      : createSummaryService();
 
     // Create concept state
     const conceptState = createMockConceptDesignState({ objective: concept });
@@ -101,7 +109,7 @@ async function generateLLMSummary(concept: string, options: CliOptions): Promise
     const request: SummaryLLMRequest = {
       context: {
         concept: concept,
-        domain: 'materials science',
+        domain: options.domain || 'materials science',
         materials: conceptState.components.materials,
         mechanisms: conceptState.components.mechanisms,
         methods: conceptState.components.methods,
@@ -247,6 +255,8 @@ function saveHeadlessOutput(data: any, format: string, options: CliOptions): str
     script: 'llm-generate-summary.ts',
     timestamp: new Date().toISOString(),
     concept: data.concept,
+    domain: options.domain || 'materials science',
+    apiProvider: process.env.API_PROVIDER || 'openai',
     llmModel: data.llmSummary.metadata.model,
     tokenUsage: data.llmSummary.metadata.tokenUsage,
     processingTime: data.llmSummary.metadata.generationTime,
@@ -271,13 +281,14 @@ async function main() {
     return;
   }
 
-  console.log('🤖 LLM-Enhanced Research Summary Generator\n');
+  const apiProvider = process.env.API_PROVIDER || 'openai';
+  console.log(`🤖 LLM-Enhanced Research Summary Generator (using ${apiProvider})\n`);
 
   // Load and verify environment variables
   const envResult = loadEnvironment();
   if (!envResult.success) {
     console.error('❌ Error:', envResult.message);
-    console.error('Please set your OpenAI API key in the .env file');
+    console.error(`Please set your ${apiProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI'} API key in the .env file`);
     process.exit(1);
   }
   
@@ -288,9 +299,11 @@ async function main() {
 
   try {
     const concept = options.concept || 'Advanced Materials Research';
+    const domain = options.domain || 'materials science';
     const format = options.format || 'markdown';
 
     console.log(`🔬 Concept: ${concept}`);
+    console.log(`🔬 Domain: ${domain}`);
     console.log(`📄 Format: ${format}`);
     
     if (options.headless) {
