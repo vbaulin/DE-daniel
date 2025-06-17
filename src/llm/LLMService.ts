@@ -46,8 +46,8 @@ export class LLMService {
       openaiConfig.project = config.project;
     }
     
-   // Allow browser usage - required for browser environments
-   openaiConfig.dangerouslyAllowBrowser = true;
+    // Allow browser usage - required for browser environments
+    openaiConfig.dangerouslyAllowBrowser = true;
    
     this.openai = new OpenAI(openaiConfig);
 

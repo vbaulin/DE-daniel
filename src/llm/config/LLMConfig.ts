@@ -31,13 +31,15 @@ export class LLMConfigManager {
     if (apiProvider === 'openrouter') {
       apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
       if (!apiKey) {
-        throw new Error('VITE_OPENROUTER_API_KEY environment variable is required when using OpenRouter');
+        console.warn('VITE_OPENROUTER_API_KEY environment variable is missing when using OpenRouter');
+        apiKey = 'missing-key';
       }
     } else {
       // Default to OpenAI
       apiKey = import.meta.env.VITE_OPENAI_API_KEY;
       if (!apiKey) {
-        throw new Error('VITE_OPENAI_API_KEY environment variable is required when using OpenAI');
+        console.warn('VITE_OPENAI_API_KEY environment variable is missing when using OpenAI');
+        apiKey = 'missing-key';
       }
     }
     

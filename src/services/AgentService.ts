@@ -62,16 +62,31 @@ export class AgentService {
     this.isLoadingKnowledgeBase = true;
     
     try {
-      fetch('/KG/merged_ISM.md')
+      fetch('/KG/mechanisms.md')
         .then(response => {
           if (!response.ok) {
-            throw new Error(`Failed to load knowledge base: ${response.status}`);
+            console.warn(`Failed to load mechanisms knowledge base: ${response.status}`);
+            return fetch('/KG/materials.md');
           }
           return response.text();
         })
         .then(content => {
-          this.knowledgeBase = content;
-          console.log("Knowledge base loaded successfully");
+          if (content) {
+            this.knowledgeBase = content;
+            console.log("Knowledge base loaded successfully from mechanisms.md");
+          } else {
+            return fetch('/KG/materials.md');
+          }
+        })
+        .then(response => {
+          if (!response || !response.ok) return null;
+          return response.text();
+        })
+        .then(content => {
+          if (content) {
+            this.knowledgeBase += "\n\n" + content;
+            console.log("Additional knowledge loaded from materials.md");
+          }
           this.isLoadingKnowledgeBase = false;
         })
         .catch(error => {
@@ -388,7 +403,44 @@ export class AgentService {
     // based on the action and concept state
     
     // For now, return a brief excerpt
-    return "Relevant knowledge base excerpt for context. The full knowledge base would be included here.";
+    if (!this.knowledgeBase || this.knowledgeBase === "Knowledge base content will be loaded dynamically") {
+      return "Knowledge base is still loading or unavailable. Using default context.";
+    }
+    
+    // Extract a relevant portion based on action and concept state
+    let searchTerms: string[] = [];
+    
+    if (action === 'suggest-compatible-components' && conceptState?.components) {
+      searchTerms = [...conceptState.components.materials, ...conceptState.components.mechanisms];
+    } else if (action === 'check-consistency') {
+      searchTerms = ['consistency', 'compatibility', 'validation'];
+    } else if (action === 'generate-protocol-outline') {
+      searchTerms = ['protocol', 'experiment', 'procedure', 'validation'];
+    } else if (action === 'generate-concept-summary') {
+      searchTerms = ['summary', 'concept', 'overview'];
+    }
+    
+    // Simple search for relevant content
+    let relevantExcerpt = "Relevant knowledge base excerpt:";
+    const knowledgeChunks = this.knowledgeBase.split('\n\n').slice(0, 50);
+    
+    for (const term of searchTerms) {
+      if (!term) continue;
+      
+      for (const chunk of knowledgeChunks) {
+        if (chunk.toLowerCase().includes(term.toLowerCase())) {
+          relevantExcerpt += "\n\n" + chunk;
+          break;
+        }
+      }
+    }
+    
+    // Limit excerpt length
+    if (relevantExcerpt.length > 1000) {
+      relevantExcerpt = relevantExcerpt.substring(0, 1000) + "...";
+    }
+    
+    return relevantExcerpt;
   }
 
   /**
