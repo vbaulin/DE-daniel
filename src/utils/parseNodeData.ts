@@ -60,7 +60,8 @@ export const preprocessMarkdownForDisplayUtil = (content: string, currentFileKey
         return `[${displayText || "link"}](${href})`;
     });
 
-    const citationRegex = /(?<![`[![#<A-Za-z0-9\-_~])\[([a-zA-Z0-9_-]+(?:_\d{4}(?:[a-zA-Z_-]\w*)?)?)\](?![(#])/g;
+    // Improved regex to better match citation keys like [author_year_title]
+    const citationRegex = /(?<![`[![#<A-Za-z0-9\-_~])\[([a-zA-Z0-9_-]+(?:_\d{4}(?:[a-zA-Z0-9_-]*)?)?)\](?![(#])/g;
     processed = processed.replace(citationRegex, (match, key) => {
         // Create a proper citation link that will open the publication file
         return `[${key}](#CITATION__${key})`;
