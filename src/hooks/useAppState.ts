@@ -367,8 +367,8 @@ export const useAppState = () => {
     // Handle protocol generation completion
     if (latestMessage.action.payload.protocolGenerated && latestMessage.sourceAgent === 'Protocol Agent') {
       try {
-        const protocol = generateProtocol(conceptDesignState);
-        const protocolMarkdown = formatProtocolAsMarkdown(protocol);
+        // Use the protocol from the LLM response
+        const protocolMarkdown = latestMessage.action.payload.protocol || '';
         
         setConceptDesignState({
           protocolOutline: protocolMarkdown,
@@ -387,8 +387,8 @@ export const useAppState = () => {
     // Handle summary generation completion
     if (latestMessage.action.payload.summaryGenerated && latestMessage.sourceAgent === 'ConceptAgent') {
       try {
-        const summary = generateSummary(conceptDesignState, graphData);
-        const summaryMarkdown = formatSummaryAsMarkdown(summary);
+        // Use the summary from the LLM response
+        const summaryMarkdown = latestMessage.action.payload.fullSummary || '';
         
         // Add summary as a message for display
         addAgentMessage({

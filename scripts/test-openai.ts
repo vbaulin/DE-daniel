@@ -25,7 +25,7 @@ async function testConnection() {
     const llmService = apiProvider === 'openrouter'
       ? createProviderService('openrouter')
       : createLLMService();
-
+    
     console.log('🔄 Testing connection...');
     
     // Test connection

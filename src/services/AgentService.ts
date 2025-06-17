@@ -6,6 +6,9 @@
  */
 
 import { AgentMessage, ConceptDesignState, NodeObject } from '../types';
+import { createLLMService } from '../llm/utils/factory';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Agent action payload interface for type safety
@@ -37,6 +40,8 @@ interface AgentResponse {
  */
 export class AgentService {
   private messageCallback: (message: Omit<AgentMessage, 'id' | 'timestamp'>) => void;
+  private llmService;
+  private knowledgeBase: string;
 
   /**
    * Initialize the agent service with a message callback
@@ -44,6 +49,45 @@ export class AgentService {
    */
   constructor(messageCallback: (message: Omit<AgentMessage, 'id' | 'timestamp'>) => void) {
     this.messageCallback = messageCallback;
+    this.llmService = createLLMService();
+    
+    // Load knowledge base content
+    try {
+      // In a real implementation, this would use fs.readFileSync
+      // For now, we'll initialize with a placeholder
+      this.knowledgeBase = "Knowledge base content will be loaded dynamically";
+      
+      // Attempt to load the knowledge base file if available
+      this.loadKnowledgeBase();
+    } catch (error) {
+      console.error("Error loading knowledge base:", error);
+      this.knowledgeBase = "Error loading knowledge base";
+    }
+  }
+  
+  /**
+   * Load the knowledge base content from file
+   */
+  private loadKnowledgeBase() {
+    try {
+      // In a browser environment, we'd use fetch instead
+      fetch('/KG/merged_ISM.md')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to load knowledge base: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(content => {
+          this.knowledgeBase = content;
+          console.log("Knowledge base loaded successfully");
+        })
+        .catch(error => {
+          console.error("Error loading knowledge base:", error);
+        });
+    } catch (error) {
+      console.error("Error in loadKnowledgeBase:", error);
+    }
   }
 
   /**
@@ -88,6 +132,10 @@ export class AgentService {
     conceptState?: ConceptDesignState,
     graphData?: { nodes: NodeObject[] }
   ): AgentResponse {
+    // For actions that should use real LLM, call the appropriate method
+    if (this.shouldUseLLM(action)) {
+      return this.getLLMResponse(action, payload, conceptState, graphData);
+    }
     
     switch (action) {
       case 'search-graph':
@@ -131,6 +179,466 @@ export class AgentService {
         
       default:
         return this.handleGenericAction(action, payload);
+    }
+  }
+
+  /**
+   * Determine if an action should use real LLM
+   */
+  private shouldUseLLM(action: string): boolean {
+    const llmActions = [
+      'suggest-compatible-components',
+      'find-analogies',
+      'check-consistency',
+      'generate-protocol-outline',
+      'generate-concept-summary',
+      'launch-exploratory-analysis'
+    ];
+    
+    return llmActions.includes(action);
+  }
+
+  /**
+   * Get response from LLM for agent actions
+   */
+  private getLLMResponse(
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState,
+    graphData?: { nodes: NodeObject[] }
+  ): AgentResponse {
+    // Create initial response message
+    const initialMessage = this.createInitialMessage(action, payload, conceptState);
+    
+    // Prepare to make LLM call
+    this.callLLMAsync(action, payload, conceptState, graphData)
+      .then(llmContent => {
+        // Send follow-up message with LLM response
+        const followUpMessage = this.createFollowUpMessage(action, llmContent, conceptState);
+        this.messageCallback(followUpMessage);
+      })
+      .catch(error => {
+        // Send error message if LLM call fails
+        this.messageCallback({
+          sourceAgent: this.getAgentForAction(action),
+          type: 'error',
+          content: `Error generating response: ${error.message}`
+        });
+      });
+    
+    // Return initial response
+    return { message: initialMessage };
+  }
+
+  /**
+   * Create initial message for LLM-based actions
+   */
+  private createInitialMessage(
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState
+  ): Omit<AgentMessage, 'id' | 'timestamp'> {
+    const agentName = this.getAgentForAction(action);
+    let content = '';
+    
+    switch (action) {
+      case 'suggest-compatible-components':
+        content = `Analyzing current design to suggest compatible components...`;
+        break;
+      case 'find-analogies':
+        content = `Searching for analogous concepts and patterns...`;
+        break;
+      case 'check-consistency':
+        content = `Validating design consistency and compatibility...`;
+        break;
+      case 'generate-protocol-outline':
+        content = `Generating experimental protocol outline...`;
+        break;
+      case 'generate-concept-summary':
+        content = `Creating comprehensive concept summary...`;
+        break;
+      case 'launch-exploratory-analysis':
+        content = `Initiating exploratory analysis of knowledge graph...`;
+        break;
+      default:
+        content = `Processing ${action}...`;
+    }
+    
+    return {
+      sourceAgent: agentName,
+      type: 'info',
+      content
+    };
+  }
+
+  /**
+   * Create follow-up message with LLM response
+   */
+  private createFollowUpMessage(
+    action: string,
+    llmContent: string,
+    conceptState?: ConceptDesignState
+  ): Omit<AgentMessage, 'id' | 'timestamp'> {
+    const agentName = this.getAgentForAction(action);
+    
+    // Create appropriate action payload based on the action type
+    let messageAction;
+    if (action === 'generate-protocol-outline') {
+      messageAction = {
+        type: 'view-details',
+        label: 'View Protocol',
+        payload: {
+          protocolGenerated: true,
+          protocol: llmContent,
+          conceptId: conceptState?.id
+        }
+      };
+    } else if (action === 'generate-concept-summary') {
+      messageAction = {
+        type: 'view-details',
+        label: 'View Full Summary',
+        payload: {
+          summaryGenerated: true,
+          fullSummary: llmContent
+        }
+      };
+    }
+    
+    return {
+      sourceAgent: agentName,
+      type: 'info',
+      content: llmContent,
+      action: messageAction
+    };
+  }
+
+  /**
+   * Make async LLM call
+   */
+  private async callLLMAsync(
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState,
+    graphData?: { nodes: NodeObject[] }
+  ): Promise<string> {
+    // Build prompt based on action type
+    const prompt = this.buildPrompt(action, payload, conceptState, graphData);
+    
+    try {
+      // Make LLM call
+      const response = await this.llmService.generateText({
+        userPrompt: prompt,
+        config: {
+          temperature: this.getTemperatureForAction(action),
+          maxTokens: this.getMaxTokensForAction(action)
+        }
+      });
+      
+      if (!response.success) {
+        throw new Error(response.error || 'Unknown error');
+      }
+      
+      return response.content;
+    } catch (error) {
+      console.error(`Error in LLM call for ${action}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Build prompt for LLM based on action type
+   */
+  private buildPrompt(
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState,
+    graphData?: { nodes: NodeObject[] }
+  ): string {
+    let prompt = '';
+    
+    // Add relevant knowledge base excerpt
+    prompt += `KNOWLEDGE BASE CONTEXT:\n${this.getRelevantKnowledgeExcerpt(action, conceptState)}\n\n`;
+    
+    // Add action-specific instructions
+    switch (action) {
+      case 'suggest-compatible-components':
+        prompt += this.buildSuggestComponentsPrompt(conceptState);
+        break;
+      case 'find-analogies':
+        prompt += this.buildFindAnalogiesPrompt(conceptState);
+        break;
+      case 'check-consistency':
+        prompt += this.buildCheckConsistencyPrompt(conceptState);
+        break;
+      case 'generate-protocol-outline':
+        prompt += this.buildGenerateProtocolPrompt(conceptState);
+        break;
+      case 'generate-concept-summary':
+        prompt += this.buildGenerateSummaryPrompt(conceptState);
+        break;
+      case 'launch-exploratory-analysis':
+        prompt += this.buildExploratoryAnalysisPrompt(payload, graphData);
+        break;
+      default:
+        prompt += `Please provide a response for the action: ${action}`;
+    }
+    
+    return prompt;
+  }
+
+  /**
+   * Get relevant excerpt from knowledge base
+   */
+  private getRelevantKnowledgeExcerpt(action: string, conceptState?: ConceptDesignState): string {
+    // In a real implementation, this would extract relevant sections from the knowledge base
+    // based on the action and concept state
+    
+    // For now, return a brief excerpt
+    return "Relevant knowledge base excerpt for context. The full knowledge base would be included here.";
+  }
+
+  /**
+   * Build prompt for suggesting compatible components
+   */
+  private buildSuggestComponentsPrompt(conceptState?: ConceptDesignState): string {
+    if (!conceptState) return "Please suggest compatible components for a new concept.";
+    
+    return `You are an expert research assistant helping to design a scientific concept.
+
+CURRENT CONCEPT:
+Objective: ${conceptState.objective || 'Not specified'}
+
+Current Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
+Current Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
+Current Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+
+TASK:
+Suggest 3-5 additional compatible components (materials, mechanisms, or methods) that would enhance this concept.
+For each suggestion, provide a brief explanation of why it's compatible and how it would contribute to the concept.
+
+FORMAT YOUR RESPONSE AS:
+1. [Component Name]: [Brief explanation of compatibility and contribution]
+2. [Component Name]: [Brief explanation of compatibility and contribution]
+...`;
+  }
+
+  /**
+   * Build prompt for finding analogies
+   */
+  private buildFindAnalogiesPrompt(conceptState?: ConceptDesignState): string {
+    if (!conceptState) return "Please find analogies for a new concept.";
+    
+    return `You are an expert research assistant helping to identify analogies for a scientific concept.
+
+CURRENT CONCEPT:
+Objective: ${conceptState.objective || 'Not specified'}
+
+Current Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
+Current Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
+Current Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+
+TASK:
+Identify 2-3 analogous systems or concepts from different domains that share similar principles, structures, or behaviors.
+For each analogy, explain the similarities and how insights from the analogous system might inform the current concept.
+
+FORMAT YOUR RESPONSE AS:
+1. [Analogy Name]: [Description of similarities and potential insights]
+2. [Analogy Name]: [Description of similarities and potential insights]
+...`;
+  }
+
+  /**
+   * Build prompt for checking consistency
+   */
+  private buildCheckConsistencyPrompt(conceptState?: ConceptDesignState): string {
+    if (!conceptState) return "Please check the consistency of a new concept.";
+    
+    return `You are an expert research assistant evaluating the consistency of a scientific concept design.
+
+CURRENT CONCEPT:
+Objective: ${conceptState.objective || 'Not specified'}
+
+Current Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
+Current Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
+Current Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+
+TASK:
+Evaluate the consistency and compatibility of the current concept design.
+Identify any potential conflicts, gaps, or inconsistencies between the components.
+Provide recommendations for resolving any issues.
+
+FORMAT YOUR RESPONSE AS:
+## Consistency Analysis
+
+### Strengths
+- [Strength 1]
+- [Strength 2]
+...
+
+### Potential Issues
+- [Issue 1]: [Description and recommendation]
+- [Issue 2]: [Description and recommendation]
+...
+
+### Overall Assessment
+[Overall consistency assessment and recommendations]`;
+  }
+
+  /**
+   * Build prompt for generating protocol
+   */
+  private buildGenerateProtocolPrompt(conceptState?: ConceptDesignState): string {
+    if (!conceptState) return "Please generate an experimental protocol for a new concept.";
+    
+    return `You are an expert research scientist creating an experimental protocol for a novel concept.
+
+CURRENT CONCEPT:
+Objective: ${conceptState.objective || 'Not specified'}
+
+Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
+Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
+Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+
+TASK:
+Generate a comprehensive experimental protocol to validate this concept.
+Include sections for materials, equipment, procedures, measurements, and analysis.
+Provide specific, actionable steps that would allow researchers to test and validate the concept.
+
+FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
+# Experimental Protocol: [Concept Name]
+
+## 1. Objective
+[Clear statement of the protocol's purpose]
+
+## 2. Materials and Equipment
+[List of required materials and equipment]
+
+## 3. Preparation
+[Preparation steps]
+
+## 4. Experimental Procedure
+[Detailed step-by-step procedure]
+
+## 5. Measurements and Data Collection
+[What to measure and how]
+
+## 6. Analysis Methods
+[How to analyze the collected data]
+
+## 7. Expected Results
+[What results would validate the concept]
+
+## 8. Troubleshooting
+[Potential issues and solutions]`;
+  }
+
+  /**
+   * Build prompt for generating summary
+   */
+  private buildGenerateSummaryPrompt(conceptState?: ConceptDesignState): string {
+    if (!conceptState) return "Please generate a summary for a new concept.";
+    
+    return `You are an expert research scientist creating a comprehensive summary of a novel concept.
+
+CURRENT CONCEPT:
+Objective: ${conceptState.objective || 'Not specified'}
+
+Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
+Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
+Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+Theoretical Concepts: ${conceptState.components.theoretical_concepts?.join(', ') || 'None specified'}
+
+TASK:
+Generate a comprehensive summary of this concept.
+Include an abstract, component analysis, technical specifications, and recommendations.
+Provide a clear, concise overview that would help researchers understand the concept.
+
+FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
+# Concept Summary: [Concept Name]
+
+## Abstract
+[Brief overview of the concept]
+
+## Component Analysis
+[Analysis of the materials, mechanisms, and methods]
+
+## Technical Specifications
+[Technical details and parameters]
+
+## Recommendations
+[Suggestions for further development or improvement]`;
+  }
+
+  /**
+   * Build prompt for exploratory analysis
+   */
+  private buildExploratoryAnalysisPrompt(
+    payload?: AgentActionPayload,
+    graphData?: { nodes: NodeObject[] }
+  ): string {
+    const targetId = payload?.targetId || 'current concept';
+    const targetNode = graphData?.nodes.find(n => n.id === targetId);
+    
+    return `You are an expert research assistant conducting an exploratory analysis of a knowledge graph.
+
+TARGET NODE:
+ID: ${targetId}
+Type: ${targetNode?.type || 'Unknown'}
+Label: ${targetNode?.label || targetId}
+Description: ${targetNode?.description || 'No description available'}
+
+TASK:
+Analyze the target node and identify potential knowledge gaps, research opportunities, and interesting connections.
+Suggest 2-3 specific research directions or questions that could be explored.
+
+FORMAT YOUR RESPONSE AS:
+## Exploratory Analysis
+
+### Key Insights
+- [Insight 1]
+- [Insight 2]
+...
+
+### Knowledge Gaps
+- [Gap 1]: [Description and research opportunity]
+- [Gap 2]: [Description and research opportunity]
+...
+
+### Suggested Research Directions
+1. [Research direction 1]: [Description and potential impact]
+2. [Research direction 2]: [Description and potential impact]
+...`;
+  }
+
+  /**
+   * Get appropriate temperature for LLM based on action
+   */
+  private getTemperatureForAction(action: string): number {
+    switch (action) {
+      case 'generate-protocol-outline':
+        return 0.3; // More deterministic for structured content
+      case 'check-consistency':
+        return 0.2; // Very deterministic for analysis
+      case 'suggest-compatible-components':
+      case 'find-analogies':
+        return 0.7; // More creative
+      default:
+        return 0.5; // Balanced default
+    }
+  }
+
+  /**
+   * Get appropriate max tokens for LLM based on action
+   */
+  private getMaxTokensForAction(action: string): number {
+    switch (action) {
+      case 'generate-protocol-outline':
+      case 'generate-concept-summary':
+        return 3000; // Longer for detailed content
+      case 'launch-exploratory-analysis':
+        return 2000; // Medium length
+      default:
+        return 1500; // Default for most responses
     }
   }
 
@@ -351,22 +859,17 @@ export class AgentService {
   private handleDeliverProtocol(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
     const conceptId = payload?.conceptId || conceptState?.objective || conceptState?.id || 'current concept';
     
-    return {
-      message: {
-        sourceAgent: 'Protocol Agent',
-        type: 'info',
-        content: `Protocol generation complete for '${conceptId}'. Protocol outline has been generated and is ready for use.`,
-        action: {
-          type: 'view-details',
-          label: 'View Protocol',
-          payload: {
-            protocolGenerated: true,
-            conceptId,
-            materials: payload?.materials || conceptState?.components?.materials || [],
-            mechanisms: payload?.mechanisms || conceptState?.components?.mechanisms || []
-          }
-        }
-      }
+    // This method is now handled by the LLM integration
+    // The initial message is created by createInitialMessage
+    // and the follow-up with results is created by createFollowUpMessage
+    
+    // For backward compatibility, return a basic response
+    return { 
+      message: { 
+        sourceAgent: 'Protocol Agent', 
+        type: 'info', 
+        content: `Processing protocol generation for '${conceptId}'...` 
+      } 
     };
   }
 
@@ -376,20 +879,17 @@ export class AgentService {
   private handleDeliverSummary(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
     const conceptId = conceptState?.objective || conceptState?.id || 'current concept';
     
-    return {
-      message: {
-        sourceAgent: 'ConceptAgent',
-        type: 'info',
-        content: `Concept summary generated for '${conceptId}'. Summary includes component analysis, technical specifications, and recommendations.`,
-        action: {
-          type: 'view-details',
-          label: 'View Summary',
-          payload: {
-            summaryGenerated: true,
-            conceptState: payload?.conceptState || conceptState
-          }
-        }
-      }
+    // This method is now handled by the LLM integration
+    // The initial message is created by createInitialMessage
+    // and the follow-up with results is created by createFollowUpMessage
+    
+    // For backward compatibility, return a basic response
+    return { 
+      message: { 
+        sourceAgent: 'ConceptAgent', 
+        type: 'info', 
+        content: `Processing summary generation for '${conceptId}'...` 
+      } 
     };
   }
 
@@ -431,4 +931,4 @@ export const createAgentService = (
   messageCallback: (message: Omit<AgentMessage, 'id' | 'timestamp'>) => void
 ): AgentService => {
   return new AgentService(messageCallback);
-}; 
+};

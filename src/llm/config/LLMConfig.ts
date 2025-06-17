@@ -41,6 +41,9 @@ export class LLMConfigManager {
       }
     }
     
+    // Clean the API key by removing any whitespace/newlines
+    apiKey = apiKey.replace(/\s+/g, '');
+    
     this.config = {
       apiProvider,
       apiKey,

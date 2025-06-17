@@ -68,6 +68,7 @@ export function createProviderService(
     ...baseConfig,
     apiProvider: provider,
     model: model || (provider === 'openrouter' ? 'google/gemini-2.0-flash-exp:free' : 'gpt-4o-mini'),
+    apiKey: provider === 'openrouter' ? process.env.OPENROUTER_API_KEY : process.env.OPENAI_API_KEY,
     ...config
   };
   return new LLMService(finalConfig as LLMConfig);
