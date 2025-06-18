@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import * as d3 from 'd3';
 import { cloneDeep } from 'lodash';
 import { GraphData, NodeObject, LinkObject as CNMLinkObject, ConceptDesignState, NodeType, EdgeType } from '../../types';
-import { getNeighbors, forceCluster } from '../../utils/graphUtils';
+import { getNeighbors, assignNodesToClusters } from '../../utils/graphUtils';
 
 interface GraphNode extends NodeObject {
   x?: number;
@@ -178,7 +178,8 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             
           case 'cluster':
             // Use force-directed clustering
-            const clusteredNodes = forceCluster(currentNodes);
+            const numClusters = Math.min(8, Math.max(3, Math.ceil(currentNodes.length / 10)));
+            const clusteredNodes = assignNodesToClusters(currentNodes, numClusters);
             const clusteredNode = clusteredNodes.find(n => n.id === node.id);
             if (clusteredNode && 'cluster' in clusteredNode) {
               groupValue = (clusteredNode as any).cluster + 1;
