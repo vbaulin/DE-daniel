@@ -223,7 +223,7 @@ const LLMResultModal: React.FC<LLMResultModalProps> = ({
               });
               
               // Convert code blocks
-              markdown = markdown.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+              markdown = markdown.replace(/\`\`\`([\s\S]*?)\`\`\`/g, '<pre><code>$1</code></pre>');
               
               // Convert inline code
               markdown = markdown.replace(/`([^`]+)`/g, '<code>$1</code>');
