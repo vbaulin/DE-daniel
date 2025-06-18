@@ -998,6 +998,55 @@ Provide scientifically grounded analysis with specific, actionable research dire
     }
   }
 
+  /**
+   * Get appropriate temperature for LLM based on action
+   */
+  private getTemperatureForAction(action: string): number {
+    switch (action) {
+      case 'generate-protocol-outline':
+        return 0.3; // More deterministic for structured content
+      case 'check-consistency':
+        return 0.2; // Very deterministic for analysis
+      case 'suggest-compatible-components':
+      case 'find-analogies':
+        return 0.7; // More creative
+      default:
+        return 0.5; // Balanced default
+    }
+  }
+
+  /**
+   * Get appropriate max tokens for LLM based on action
+   */
+  private getMaxTokensForAction(action: string): number {
+    switch (action) {
+      case 'generate-protocol-outline':
+      case 'generate-concept-summary':
+        return 3000; // Longer for detailed content
+      case 'launch-exploratory-analysis':
+        return 2000; // Medium length
+      default:
+        return 1500; // Default for most responses
+    }
+  }
+
+  /**
+   * Load a prompt template from file
+   */
+  private async loadPromptTemplate(promptFileName: string): Promise<string> {
+    try {
+      const response = await fetch(`/prompts/${promptFileName}.txt`);
+      if (!response.ok) {
+        console.warn(`Failed to load prompt template: ${promptFileName}.txt`);
+        return this.getBuiltInPrompt(promptFileName);
+      }
+      return await response.text();
+    } catch (error) {
+      console.error(`Error loading prompt template ${promptFileName}:`, error);
+      return this.getBuiltInPrompt(promptFileName);
+    }
+  }
+
   // Placeholder methods for non-LLM actions
   private handleSearchGraph(payload?: AgentActionPayload): AgentResponse {
     return {
