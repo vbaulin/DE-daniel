@@ -5,7 +5,7 @@
  * through the useAppState hook, dramatically reducing complexity and improving maintainability.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { AlertCircle, Loader, Search, Lightbulb, Compass, Layers, Upload, Menu, X as CloseIcon, Brain, FlaskConical, Zap, Activity, Target, HelpCircle, BookOpen } from 'lucide-react';
 
 // Components
@@ -55,6 +55,10 @@ function App() {
     updateCssField,
     isContextPanelVisible
   } = useAppState();
+
+  // Add new state for graph visualization controls
+  const [graphColorBy, setGraphColorBy] = useState<'type' | 'group' | 'status' | 'origin' | 'custom'>('type');
+  const [graphGroupBy, setGraphGroupBy] = useState<'none' | 'type' | 'status' | 'origin' | 'connections' | 'cluster'>('none');
 
   /**
    * Handle navigation to wiki section from NodeView links
@@ -241,6 +245,8 @@ function App() {
                       selectedNodeId={state.selectedNodeId}
                       conceptDesignState={conceptDesignState}
                       onFilterComplete={actions.handleSearchFilterComplete}
+                      colorBy={graphColorBy}
+                      groupBy={graphGroupBy}
                     />
                     <GraphControls 
                       darkMode={state.darkMode} 
@@ -252,6 +258,10 @@ function App() {
                       onToggleLinks={actions.toggleLinks}
                       onTogglePhysics={actions.togglePhysics}
                       onToggleParticles={actions.toggleParticles}
+                      colorBy={graphColorBy}
+                      onChangeColorBy={(value) => setGraphColorBy(value as any)}
+                      groupBy={graphGroupBy}
+                      onChangeGroupBy={(value) => setGraphGroupBy(value as any)}
                     />
                   </div>
                 ) : (
