@@ -356,7 +356,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
             const isDimmed = isContextActive && !isSelected && !isHovered && !isDirectNeighbor;
             
             // Determine node color based on colorBy parameter
-            let baseColorHex: string;
+            let baseColorHex: string = '';
             
             switch (colorBy) {
               case 'type':
@@ -511,7 +511,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   }, [
     filteredData, darkMode, showLabels, showLinks, enablePhysics, showParticles,
     selectedNodeId, hoveredNodeId, neighborNodes, neighborLinks
-  ]);
+  , colorBy, groupBy]);
 
   return (
     <div
