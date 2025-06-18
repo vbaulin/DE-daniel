@@ -6,6 +6,7 @@ import { cloneDeep } from 'lodash';
 import * as d3 from 'd3';
 
 // Find all neighbors of a given node up to a certain depth
+export function assignNodesToClusters(nodes: NodeObject[], numClusters: number): NodeObject[] {
   // Simple implementation of force-directed clustering
   const clusters = Array.from({ length: numClusters }, (_, i) => ({
     id: i,
