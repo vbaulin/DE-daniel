@@ -510,18 +510,28 @@ export class AgentService {
   private getLLMConfigForAction(action: string) {
     switch (action) {
       case 'generate-protocol-outline':
-        return llmConfig.getProtocolConfig();
+        return {
+          ...llmConfig.getProtocolConfig(),
+          model: import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free'
+        };
       case 'generate-concept-summary':
-        return llmConfig.getSummaryConfig();
+        return {
+          ...llmConfig.getSummaryConfig(),
+          model: import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free'
+        };
       case 'suggest-compatible-components':
       case 'find-analogies':
       case 'check-consistency':
       case 'launch-exploratory-analysis':
-        return llmConfig.getResearchConfig();
+        return {
+          ...llmConfig.getResearchConfig(),
+          model: import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free'
+        };
       default:
         return {
           temperature: 0.7,
-          maxTokens: 2000
+          maxTokens: 2000,
+          model: import.meta.env.VITE_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free'
         };
     }
   }
