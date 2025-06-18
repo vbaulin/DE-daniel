@@ -186,10 +186,66 @@ const LLMResultModal: React.FC<LLMResultModalProps> = ({
                 </div>
                 <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>` 
                 : 
-                content
+                `<div class="markdown-content">${content}</div>`
               }
             </div>
           </div>
+          <script>
+            // Function to convert markdown to HTML
+            function renderMarkdown() {
+              const contentElement = document.querySelector('.markdown-content');
+              if (!contentElement) return;
+              
+              // Simple markdown parsing for headings, lists, code blocks, etc.
+              let markdown = contentElement.innerHTML;
+              
+              // Convert headings
+              markdown = markdown.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+              markdown = markdown.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+              markdown = markdown.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+              markdown = markdown.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
+              
+              // Convert bold and italic
+              markdown = markdown.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+              markdown = markdown.replace(/\*(.*?)\*/g, '<em>$1</em>');
+              
+              // Convert lists
+              markdown = markdown.replace(/^\s*- (.*$)/gm, '<li>$1</li>');
+              markdown = markdown.replace(/^\s*\d+\. (.*$)/gm, '<li>$1</li>');
+              
+              // Wrap lists
+              markdown = markdown.replace(/<li>.*?<\/li>(?:\s*<li>.*?<\/li>)+/gs, match => {
+                if (match.includes('1. ') || match.includes('2. ')) {
+                  return '<ol>' + match + '</ol>';
+                } else {
+                  return '<ul>' + match + '</ul>';
+                }
+              });
+              
+              // Convert code blocks
+              markdown = markdown.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+              
+              // Convert inline code
+              markdown = markdown.replace(/`([^`]+)`/g, '<code>$1</code>');
+              
+              // Convert paragraphs (must come after other conversions)
+              markdown = markdown.replace(/^(?!<[a-z])(.*$)/gm, '<p>$1</p>');
+              
+              // Fix empty paragraphs
+              markdown = markdown.replace(/<p><\/p>/g, '<br>');
+              
+              // Set the HTML content
+              contentElement.innerHTML = markdown;
+            }
+            
+            // Run the markdown renderer
+            document.addEventListener('DOMContentLoaded', renderMarkdown);
+            
+            // Also run it now in case the DOM is already loaded
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+              setTimeout(renderMarkdown, 1);
+            }
+          </script>
         </body>
       </html>
     `);
@@ -203,7 +259,9 @@ const LLMResultModal: React.FC<LLMResultModalProps> = ({
     if (newWindow && !isLoading) {
       const contentElement = newWindow.document.getElementById('content');
       if (contentElement) {
-        contentElement.innerHTML = content;
+        contentElement.innerHTML = `<div class="markdown-content">${content}</div>`;
+        // Execute the markdown rendering function
+        newWindow.renderMarkdown();
       }
     }
   }, [newWindow, content, isLoading]);
