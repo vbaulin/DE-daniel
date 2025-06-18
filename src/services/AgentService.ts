@@ -988,6 +988,7 @@ Provide scientifically grounded analysis with specific, actionable research dire
           console.warn(`Failed to load prompt file: ${promptFileName}.txt`);
           // Fall back to built-in prompts
           promptTemplate = this.getBuiltInPrompt(action);
+        }
         if (response.ok) {
           promptTemplate = await response.text();
         } else {
