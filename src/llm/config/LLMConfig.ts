@@ -149,9 +149,7 @@ export class LLMConfigManager {
    */
   getResearchConfig(): LLMConfig {
     const baseConfig = this.getConfig();
-    const model = baseConfig.apiProvider === 'openrouter'
-      ? baseConfig.model // Use the model from environment variables
-      : 'gpt-4o';
+    const model = baseConfig.model;
       
     return {
       ...baseConfig,
@@ -166,9 +164,7 @@ export class LLMConfigManager {
    */
   getProtocolConfig(): LLMConfig {
     const baseConfig = this.getConfig();
-    const model = baseConfig.apiProvider === 'openrouter'
-      ? baseConfig.model // Use the model from environment variables
-      : 'gpt-4o';
+    const model = baseConfig.model;
       
     return {
       ...baseConfig,
@@ -183,9 +179,7 @@ export class LLMConfigManager {
    */
   getSummaryConfig(): LLMConfig {
     const baseConfig = this.getConfig();
-    const model = baseConfig.apiProvider === 'openrouter'
-      ? baseConfig.model // Use the model from environment variables
-      : 'gpt-4o-mini';
+    const model = baseConfig.model;
       
     return {
       ...baseConfig,
