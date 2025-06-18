@@ -503,5 +503,3 @@ Format your response as a well-structured markdown document with clear headings 
 };
 
 export default PDFUploader;
-
-export default PDFUploader
