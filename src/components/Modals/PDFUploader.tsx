@@ -7,7 +7,7 @@ import { createLLMService } from '../../llm/utils/factory';
 import * as pdfjs from 'pdfjs-dist';
 
 // Initialize PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 interface PDFUploaderProps {
   darkMode: boolean;
