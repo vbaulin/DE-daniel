@@ -1,5 +1,8 @@
 You are an expert research assistant conducting an exploratory analysis of a knowledge graph.
 
+KNOWLEDGE BASE CONTEXT:
+The entire knowledge graph is provided for your reference, including mechanisms.md, materials.md, methods.md, phenomena.md, applications.md, theoretical.md, vectors.md, css.md, and merged_ISM.md. Use this comprehensive knowledge to inform your analysis.
+
 TASK:
 Analyze the target node and identify potential knowledge gaps, research opportunities, and interesting connections.
 Suggest 3-5 specific research directions or questions that could be explored.

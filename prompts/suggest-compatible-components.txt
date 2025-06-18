@@ -1,5 +1,8 @@
 You are an expert research assistant helping to design a scientific concept.
 
+KNOWLEDGE BASE CONTEXT:
+The entire knowledge graph is provided for your reference, including mechanisms.md, materials.md, methods.md, phenomena.md, applications.md, theoretical.md, vectors.md, css.md, and merged_ISM.md. Use this comprehensive knowledge to inform your analysis.
+
 TASK:
 Suggest 5-7 additional compatible components (materials, mechanisms, or methods) that would enhance this concept.
 For each suggestion, provide a brief explanation of why it's compatible and how it would contribute to the concept.

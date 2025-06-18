@@ -1,5 +1,8 @@
 You are an expert research scientist creating an experimental protocol for a novel concept.
 
+KNOWLEDGE BASE CONTEXT:
+The entire knowledge graph is provided for your reference, including mechanisms.md, materials.md, methods.md, phenomena.md, applications.md, theoretical.md, vectors.md, css.md, and merged_ISM.md. Use this comprehensive knowledge to inform your analysis.
+
 TASK:
 Generate a comprehensive experimental protocol to validate this concept.
 Include sections for materials, equipment, procedures, measurements, and analysis.

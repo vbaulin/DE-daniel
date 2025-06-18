@@ -1,5 +1,8 @@
 You are an expert research assistant helping to identify analogies for a scientific concept.
 
+KNOWLEDGE BASE CONTEXT:
+The entire knowledge graph is provided for your reference, including mechanisms.md, materials.md, methods.md, phenomena.md, applications.md, theoretical.md, vectors.md, css.md, and merged_ISM.md. Use this comprehensive knowledge to inform your analysis.
+
 TASK:
 Identify 3-5 analogous systems or concepts from different domains that share similar principles, structures, or behaviors with the current concept.
 For each analogy, explain the similarities and how insights from the analogous system might inform the current concept.

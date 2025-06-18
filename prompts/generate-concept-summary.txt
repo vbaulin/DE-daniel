@@ -1,5 +1,8 @@
 You are an expert research scientist creating a comprehensive summary of a novel concept.
 
+KNOWLEDGE BASE CONTEXT:
+The entire knowledge graph is provided for your reference, including mechanisms.md, materials.md, methods.md, phenomena.md, applications.md, theoretical.md, vectors.md, css.md, and merged_ISM.md. Use this comprehensive knowledge to inform your analysis.
+
 TASK:
 Generate a comprehensive summary of this concept.
 Include an abstract, component analysis, technical specifications, and recommendations.
