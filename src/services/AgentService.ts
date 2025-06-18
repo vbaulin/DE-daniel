@@ -978,3 +978,6 @@ export const createAgentService = (
 ): AgentService => {
   return new AgentService(messageCallback);
 };
+
+
+export { createAgentService }
