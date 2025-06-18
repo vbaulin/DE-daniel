@@ -982,3 +982,7 @@ Provide scientifically grounded analysis with specific, actionable research dire
       
       // Replace variables in the prompt
       return this.replacePromptVariables(promptTemplate, action, payload, conceptState
+      )
+    }
+  }
+}
