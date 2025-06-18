@@ -7,6 +7,7 @@
 
 import { AgentMessage, ConceptDesignState, NodeObject } from '../types';
 import { createLLMService } from '../llm/utils/factory';
+import { llmConfig } from '../llm/config/LLMConfig';
 
 /**
  * Agent action payload interface for type safety
@@ -484,14 +485,15 @@ export class AgentService {
   ): Promise<string> {
     // Build prompt based on action type
     const prompt = this.buildPrompt(action, payload, conceptState, graphData);
+    const config = this.getLLMConfigForAction(action);
     
     try {
       // Make LLM call
       const response = await this.llmService.generateText({
         userPrompt: prompt,
         config: {
-          temperature: this.getTemperatureForAction(action),
-          maxTokens: this.getMaxTokensForAction(action)
+          temperature: config.temperature,
+          maxTokens: config.maxTokens
         }
       });
       
@@ -503,6 +505,39 @@ export class AgentService {
     } catch (error) {
       console.error(`Error in LLM call for ${action}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Get appropriate LLM configuration for a specific action
+   */
+  private getLLMConfigForAction(action: string): { temperature: number; maxTokens: number } {
+    switch (action) {
+      case 'generate-protocol-outline':
+        return { 
+          temperature: 0.3, // More deterministic for structured content
+          maxTokens: 3000 
+        };
+      case 'check-consistency':
+        return { 
+          temperature: 0.2, // Very deterministic for analysis
+          maxTokens: 2000 
+        };
+      case 'suggest-compatible-components':
+      case 'find-analogies':
+        return { 
+          temperature: 0.7, // More creative
+          maxTokens: 2000 
+        };
+      case 'generate-concept-summary':
+        return llmConfig.getSummaryConfig();
+      case 'launch-exploratory-analysis':
+        return llmConfig.getResearchConfig();
+      default:
+        return { 
+          temperature: 0.5, // Balanced default
+          maxTokens: 1500 
+        };
     }
   }
 
@@ -947,6 +982,12 @@ Provide scientifically grounded analysis with specific, actionable research dire
       let promptTemplate = '';
       try {
         const response = await fetch(`/prompts/${promptFileName}.txt`);
+        if (response.ok) {
+          promptTemplate = await response.text();
+        } else {
+          console.warn(`Failed to load prompt file: ${promptFileName}.txt`);
+          // Fall back to built-in prompts
+          promptTemplate = this.getBuiltInPrompt(action);
         if (response.ok) {
           promptTemplate = await response.text();
         } else {
