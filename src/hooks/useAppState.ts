@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { AgentMessage, ConceptDesignState, BreadcrumbItem, NodeObject, LinkObject, GraphData } from '../types';
-import { createAgentService } from '../services/AgentService';
+import { AgentService } from '../services/AgentService';
 import { useGraphData } from './useGraphData';
 import { useConceptDesign } from './useConceptDesign';
 import { useDebouncedValue } from '../utils/performanceUtils';
@@ -159,7 +159,7 @@ export const useAppState = () => {
   }, []);
 
   // Initialize agent service
-  const agentService = useMemo(() => createAgentService(addAgentMessage), [addAgentMessage]);
+  const agentService = useMemo(() => new AgentService(addAgentMessage), [addAgentMessage]);
 
   /**
    * Enhanced agent trigger function with state management integration
