@@ -150,7 +150,7 @@ export class LLMConfigManager {
   getResearchConfig(): LLMConfig {
     const baseConfig = this.getConfig();
     const model = baseConfig.apiProvider === 'openrouter'
-      ? 'google/gemini-2.0-pro-exp-02-05:free'
+      ? baseConfig.model // Use the model from environment variables
       : 'gpt-4o';
       
     return {
@@ -167,7 +167,7 @@ export class LLMConfigManager {
   getProtocolConfig(): LLMConfig {
     const baseConfig = this.getConfig();
     const model = baseConfig.apiProvider === 'openrouter'
-      ? 'google/gemini-2.0-pro-exp-02-05:free'
+      ? baseConfig.model // Use the model from environment variables
       : 'gpt-4o';
       
     return {
@@ -184,7 +184,7 @@ export class LLMConfigManager {
   getSummaryConfig(): LLMConfig {
     const baseConfig = this.getConfig();
     const model = baseConfig.apiProvider === 'openrouter'
-      ? 'google/gemini-2.0-flash-exp:free'
+      ? baseConfig.model // Use the model from environment variables
       : 'gpt-4o-mini';
       
     return {
