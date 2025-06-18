@@ -232,6 +232,18 @@ export const useAppState = () => {
       case 'integrate-data':
         const newData = payload;
         if (newData && newData.nodes && newData.links) {
+          // Check if there's a view-llm-result action in the payload
+          if (payload.action && payload.action.type === 'view-llm-result') {
+            // Show the LLM result modal
+            setState(prev => ({
+              ...prev,
+              showLLMResultModal: true,
+              llmResultTitle: payload.action.payload.title || 'Analysis Result',
+              llmResultContent: payload.action.payload.content || '',
+              isLLMResultLoading: false
+            }));
+          }
+          
           setGraphData(prevData => ({
             nodes: [...prevData.nodes, ...newData.nodes],
             links: [...prevData.links, ...newData.links]
@@ -586,4 +598,4 @@ export const useAppState = () => {
       isLoading: state.isLLMResultLoading
     }
   };
-}; 
+};
