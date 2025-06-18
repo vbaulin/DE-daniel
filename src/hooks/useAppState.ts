@@ -374,53 +374,37 @@ export const useAppState = () => {
   // Handle protocol and summary generation based on agent messages
   useEffect(() => {
     const latestMessage = state.agentMessages[state.agentMessages.length - 1];
-    if (!latestMessage?.action?.payload) return;
+    if (!latestMessage?.action) return;
 
-    // Handle protocol generation completion
-    if (latestMessage.action.payload.protocolGenerated && latestMessage.sourceAgent === 'Protocol Agent') {
-      try {
-        // Use the protocol from the LLM response
-        const protocolMarkdown = latestMessage.action.payload.protocol || '';
-        
-        setConceptDesignState({
-          protocolOutline: protocolMarkdown,
-          status: 'Validated'
-        });
-      } catch (error) {
-        console.error('Error generating protocol:', error);
-        addAgentMessage({
-          sourceAgent: 'Protocol Agent',
-          type: 'error',
-          content: 'Failed to generate protocol. Please check the concept definition.'
-        });
+    // Handle LLM result actions
+    if (latestMessage.action.type === 'view-llm-result') {
+      const payload = latestMessage.action.payload;
+      
+      // Handle protocol generation completion
+      if (payload.protocolGenerated && latestMessage.sourceAgent === 'Protocol Agent') {
+        try {
+          // Use the protocol from the LLM response
+          const protocolMarkdown = payload.protocol || '';
+          
+          setConceptDesignState({
+            protocolOutline: protocolMarkdown,
+            status: 'Validated'
+          });
+        } catch (error) {
+          console.error('Error generating protocol:', error);
+          addAgentMessage({
+            sourceAgent: 'Protocol Agent',
+            type: 'error',
+            content: 'Failed to generate protocol. Please check the concept definition.'
+          });
+        }
       }
-    }
 
-    // Handle summary generation completion
-    if (latestMessage.action.payload.summaryGenerated && latestMessage.sourceAgent === 'ConceptAgent') {
-      try {
-        // Use the summary from the LLM response
-        const summaryMarkdown = latestMessage.action.payload.fullSummary || '';
-        
-        // Add summary as a message for display
-        addAgentMessage({
-          sourceAgent: 'ConceptAgent',
-          type: 'info',
-          content: `**Generated Summary:**\n\n${summaryMarkdown.substring(0, 500)}${summaryMarkdown.length > 500 ? '...\n\n[Full summary generated]' : ''}`,
-          action: {
-            type: 'view-details',
-            label: 'View Full Summary',
-            payload: { fullSummary: summaryMarkdown }
-          }
-        });
-      } catch (error) {
-        console.error('Error generating summary:', error);
-        addAgentMessage({
-          sourceAgent: 'ConceptAgent',
-          type: 'error',
-          content: 'Failed to generate summary. Please check the concept definition.'
-        });
-      }
+      // Show the LLM result in the modal
+      actions.showLLMResult(
+        payload.title || 'LLM Result',
+        payload.content || ''
+      );
     }
   }, [state.agentMessages, conceptDesignState, graphData, setConceptDesignState, addAgentMessage]);
 

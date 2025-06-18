@@ -290,35 +290,164 @@ export class AgentService {
   ): Omit<AgentMessage, 'id' | 'timestamp'> {
     const agentName = this.getAgentForAction(action);
     
-    // Create appropriate action payload based on the action type
-    let messageAction;
-    if (action === 'generate-protocol-outline') {
-      messageAction = {
-        type: 'view-details',
-        label: 'View Protocol',
-        payload: {
-          protocolGenerated: true,
-          protocol: llmContent,
-          conceptId: conceptState?.id
-        }
-      };
-    } else if (action === 'generate-concept-summary') {
-      messageAction = {
-        type: 'view-details',
-        label: 'View Full Summary',
-        payload: {
-          summaryGenerated: true,
-          fullSummary: llmContent
-        }
-      };
+    // Create a summary of the content for the message
+    const contentSummary = this.createContentSummary(llmContent, action);
+    
+    // Create appropriate action payload for viewing in new window
+    let messageAction = {
+      type: 'view-llm-result',
+      label: 'View Full Analysis',
+      payload: {}
+    };
+    
+    // Customize action based on action type
+    switch (action) {
+      case 'generate-protocol-outline':
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View Full Protocol',
+          payload: {
+            title: `Protocol: ${conceptState?.objective || 'New Concept'}`,
+            content: llmContent,
+            protocolGenerated: true,
+            protocol: llmContent,
+            conceptId: conceptState?.id
+          }
+        };
+        break;
+        
+      case 'generate-concept-summary':
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View Full Summary',
+          payload: {
+            title: `Summary: ${conceptState?.objective || 'New Concept'}`,
+            content: llmContent,
+            summaryGenerated: true,
+            fullSummary: llmContent
+          }
+        };
+        break;
+        
+      case 'check-consistency':
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View Full Analysis',
+          payload: {
+            title: `Consistency Analysis: ${conceptState?.objective || 'New Concept'}`,
+            content: llmContent
+          }
+        };
+        break;
+        
+      case 'find-analogies':
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View Full Analysis',
+          payload: {
+            title: `Analogical Analysis: ${conceptState?.objective || 'New Concept'}`,
+            content: llmContent
+          }
+        };
+        break;
+        
+      case 'launch-exploratory-analysis':
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View Full Analysis',
+          payload: {
+            title: 'Exploratory Analysis',
+            content: llmContent
+          }
+        };
+        break;
+        
+      case 'suggest-compatible-components':
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View All Suggestions',
+          payload: {
+            title: `Component Suggestions: ${conceptState?.objective || 'New Concept'}`,
+            content: llmContent
+          }
+        };
+        break;
+        
+      default:
+        messageAction = {
+          type: 'view-llm-result',
+          label: 'View Full Result',
+          payload: {
+            title: 'LLM Analysis',
+            content: llmContent
+          }
+        };
     }
     
     return {
       sourceAgent: agentName,
       type: 'info',
-      content: llmContent,
+      content: contentSummary,
       action: messageAction
     };
+  }
+  
+  /**
+   * Create a summary of the LLM content for display in the agent message
+   */
+  private createContentSummary(content: string, action: string): string {
+    // Extract the first section or a limited number of characters
+    const maxLength = 300;
+    
+    // Try to find the first heading and extract content until the next heading
+    const headingMatch = content.match(/^#\s+(.+)$/m);
+    const firstHeading = headingMatch ? headingMatch[0] : '';
+    
+    let summary = '';
+    
+    if (firstHeading) {
+      // Include the first heading
+      summary = firstHeading + '\n\n';
+      
+      // Find the content after the first heading until the next heading or end
+      const contentAfterHeading = content.substring(content.indexOf(firstHeading) + firstHeading.length);
+      const nextHeadingIndex = contentAfterHeading.search(/^#/m);
+      
+      if (nextHeadingIndex !== -1) {
+        summary += contentAfterHeading.substring(0, nextHeadingIndex).trim();
+      } else {
+        summary += contentAfterHeading.substring(0, maxLength);
+        if (contentAfterHeading.length > maxLength) {
+          summary += '...';
+        }
+      }
+    } else {
+      // If no heading found, just take the first part of the content
+      summary = content.substring(0, maxLength);
+      if (content.length > maxLength) {
+        summary += '...';
+      }
+    }
+    
+    // Add a note about viewing the full result
+    summary += `\n\n*Click "View Full ${this.getActionResultName(action)}" to see the complete analysis in a new window.*`;
+    
+    return summary;
+  }
+  
+  /**
+   * Get a user-friendly name for the action result
+   */
+  private getActionResultName(action: string): string {
+    switch (action) {
+      case 'generate-protocol-outline': return 'Protocol';
+      case 'generate-concept-summary': return 'Summary';
+      case 'check-consistency': return 'Analysis';
+      case 'find-analogies': return 'Analysis';
+      case 'launch-exploratory-analysis': return 'Analysis';
+      case 'suggest-compatible-components': return 'Suggestions';
+      default: return 'Result';
+    }
   }
 
   /**
@@ -363,297 +492,483 @@ export class AgentService {
     conceptState?: ConceptDesignState,
     graphData?: { nodes: NodeObject[] }
   ): string {
-    let prompt = '';
+    return this.loadPromptFromFile(action, payload, conceptState, graphData);
+  }
+
+  /**
+   * Load prompt from file and replace variables
+   */
+  private async loadPromptFromFile(
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState,
+    graphData?: { nodes: NodeObject[] }
+  ): Promise<string> {
+    try {
+      // Determine which prompt file to load
+      let promptFileName = '';
+      switch (action) {
+        case 'suggest-compatible-components':
+          promptFileName = 'suggest-compatible-components';
+          break;
+        case 'find-analogies':
+          promptFileName = 'find-analogies';
+          break;
+        case 'check-consistency':
+          promptFileName = 'check-consistency';
+          break;
+        case 'generate-protocol-outline':
+          promptFileName = 'generate-protocol-outline';
+          break;
+        case 'generate-concept-summary':
+          promptFileName = 'generate-concept-summary';
+          break;
+        case 'launch-exploratory-analysis':
+          promptFileName = 'launch-exploratory-analysis';
+          break;
+        default:
+          return `Please provide a response for the action: ${action}`;
+      }
+      
+      // Try to load the prompt from file
+      let promptTemplate = '';
+      try {
+        const response = await fetch(`/prompts/${promptFileName}.txt`);
+        if (response.ok) {
+          promptTemplate = await response.text();
+        } else {
+          console.warn(`Failed to load prompt file: ${promptFileName}.txt`);
+          // Fall back to built-in prompts
+          promptTemplate = this.getBuiltInPrompt(action);
+        }
+      } catch (error) {
+        console.error(`Error loading prompt file: ${error}`);
+        // Fall back to built-in prompts
+        promptTemplate = this.getBuiltInPrompt(action);
+      }
+      
+      // Replace variables in the prompt
+      return this.replacePromptVariables(promptTemplate, action, payload, conceptState, graphData);
+    } catch (error) {
+      console.error(`Error in loadPromptFromFile: ${error}`);
+      return `Please provide a response for the action: ${action}`;
+    }
+  }
+
+  /**
+   * Replace variables in prompt template
+   */
+  private replacePromptVariables(
+    promptTemplate: string,
+    action: string,
+    payload?: AgentActionPayload,
+    conceptState?: ConceptDesignState,
+    graphData?: { nodes: NodeObject[] }
+  ): string {
+    let prompt = promptTemplate;
     
-    // Add relevant knowledge base excerpt
-    prompt += `KNOWLEDGE BASE CONTEXT:\n${this.getRelevantKnowledgeExcerpt(action, conceptState)}\n\n`;
+    // Replace concept state variables
+    if (conceptState) {
+      prompt = prompt.replace(/\{objective\}/g, conceptState.objective || 'Not specified');
+      prompt = prompt.replace(/\{materials\}/g, conceptState.components.materials.join(', ') || 'None specified');
+      prompt = prompt.replace(/\{mechanisms\}/g, conceptState.components.mechanisms.join(', ') || 'None specified');
+      prompt = prompt.replace(/\{methods\}/g, conceptState.components.methods.join(', ') || 'None specified');
+      prompt = prompt.replace(/\{theoretical_concepts\}/g, conceptState.components.theoretical_concepts?.join(', ') || 'None specified');
+    }
     
-    // Add action-specific instructions
-    switch (action) {
-      case 'suggest-compatible-components':
-        prompt += this.buildSuggestComponentsPrompt(conceptState);
-        break;
-      case 'find-analogies':
-        prompt += this.buildFindAnalogiesPrompt(conceptState);
-        break;
-      case 'check-consistency':
-        prompt += this.buildCheckConsistencyPrompt(conceptState);
-        break;
-      case 'generate-protocol-outline':
-        prompt += this.buildGenerateProtocolPrompt(conceptState);
-        break;
-      case 'generate-concept-summary':
-        prompt += this.buildGenerateSummaryPrompt(conceptState);
-        break;
-      case 'launch-exploratory-analysis':
-        prompt += this.buildExploratoryAnalysisPrompt(payload, graphData);
-        break;
-      default:
-        prompt += `Please provide a response for the action: ${action}`;
+    // Replace target node variables for exploratory analysis
+    if (action === 'launch-exploratory-analysis' && payload) {
+      const targetId = payload.targetId || 'current concept';
+      const targetNode = graphData?.nodes.find(n => n.id === targetId);
+      
+      prompt = prompt.replace(/\{targetId\}/g, targetId);
+      prompt = prompt.replace(/\{targetNodeType\}/g, targetNode?.type || 'Unknown');
+      prompt = prompt.replace(/\{targetNodeLabel\}/g, targetNode?.label || targetId);
+      prompt = prompt.replace(/\{targetNodeDescription\}/g, targetNode?.description || 'No description available');
     }
     
     return prompt;
   }
 
   /**
-   * Get relevant excerpt from knowledge base
+   * Get built-in prompt for fallback
    */
-  private getRelevantKnowledgeExcerpt(action: string, conceptState?: ConceptDesignState): string {
-    // In a real implementation, this would extract relevant sections from the knowledge base
-    // based on the action and concept state
-    
-    // For now, return a brief excerpt
-    if (!this.knowledgeBase || this.knowledgeBase === "Knowledge base content will be loaded dynamically") {
-      return "Knowledge base is still loading or unavailable. Using default context.";
-    }
-    
-    // Extract a relevant portion based on action and concept state
-    let searchTerms: string[] = [];
-    
-    if (action === 'suggest-compatible-components' && conceptState?.components) {
-      searchTerms = [...conceptState.components.materials, ...conceptState.components.mechanisms];
-    } else if (action === 'check-consistency') {
-      searchTerms = ['consistency', 'compatibility', 'validation'];
-    } else if (action === 'generate-protocol-outline') {
-      searchTerms = ['protocol', 'experiment', 'procedure', 'validation'];
-    } else if (action === 'generate-concept-summary') {
-      searchTerms = ['summary', 'concept', 'overview'];
-    }
-    
-    // Simple search for relevant content
-    let relevantExcerpt = "Relevant knowledge base excerpt:";
-    const knowledgeChunks = this.knowledgeBase.split('\n\n').slice(0, 50);
-    
-    for (const term of searchTerms) {
-      if (!term) continue;
-      
-      for (const chunk of knowledgeChunks) {
-        if (chunk.toLowerCase().includes(term.toLowerCase())) {
-          relevantExcerpt += "\n\n" + chunk;
-          break;
-        }
-      }
-    }
-    
-    // Limit excerpt length
-    if (relevantExcerpt.length > 1000) {
-      relevantExcerpt = relevantExcerpt.substring(0, 1000) + "...";
-    }
-    
-    return relevantExcerpt;
-  }
-
-  /**
-   * Build prompt for suggesting compatible components
-   */
-  private buildSuggestComponentsPrompt(conceptState?: ConceptDesignState): string {
-    if (!conceptState) return "Please suggest compatible components for a new concept.";
-    
-    return `You are an expert research assistant helping to design a scientific concept.
-
-CURRENT CONCEPT:
-Objective: ${conceptState.objective || 'Not specified'}
-
-Current Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
-Current Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
-Current Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+  private getBuiltInPrompt(action: string): string {
+    switch (action) {
+      case 'suggest-compatible-components':
+        return `You are an expert research assistant helping to design a scientific concept.
 
 TASK:
-Suggest 3-5 additional compatible components (materials, mechanisms, or methods) that would enhance this concept.
+Suggest 5-7 additional compatible components (materials, mechanisms, or methods) that would enhance this concept.
 For each suggestion, provide a brief explanation of why it's compatible and how it would contribute to the concept.
-
-FORMAT YOUR RESPONSE AS:
-1. [Component Name]: [Brief explanation of compatibility and contribution]
-2. [Component Name]: [Brief explanation of compatibility and contribution]
-...`;
-  }
-
-  /**
-   * Build prompt for finding analogies
-   */
-  private buildFindAnalogiesPrompt(conceptState?: ConceptDesignState): string {
-    if (!conceptState) return "Please find analogies for a new concept.";
-    
-    return `You are an expert research assistant helping to identify analogies for a scientific concept.
+Focus on scientifically sound combinations that would work well together.
 
 CURRENT CONCEPT:
-Objective: ${conceptState.objective || 'Not specified'}
+Objective: {objective}
 
-Current Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
-Current Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
-Current Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+Current Materials: {materials}
+Current Mechanisms: {mechanisms}
+Current Methods: {methods}
+Current Theoretical Concepts: {theoretical_concepts}
 
-TASK:
-Identify 2-3 analogous systems or concepts from different domains that share similar principles, structures, or behaviors.
-For each analogy, explain the similarities and how insights from the analogous system might inform the current concept.
+FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
 
-FORMAT YOUR RESPONSE AS:
-1. [Analogy Name]: [Description of similarities and potential insights]
-2. [Analogy Name]: [Description of similarities and potential insights]
-...`;
-  }
+# Component Suggestions for {objective}
 
-  /**
-   * Build prompt for checking consistency
-   */
-  private buildCheckConsistencyPrompt(conceptState?: ConceptDesignState): string {
-    if (!conceptState) return "Please check the consistency of a new concept.";
-    
-    return `You are an expert research assistant evaluating the consistency of a scientific concept design.
+## Suggested Materials
+1. **[Material Name]**: [Brief explanation of compatibility and contribution]
+2. **[Material Name]**: [Brief explanation of compatibility and contribution]
+...
 
-CURRENT CONCEPT:
-Objective: ${conceptState.objective || 'Not specified'}
+## Suggested Mechanisms
+1. **[Mechanism Name]**: [Brief explanation of compatibility and contribution]
+2. **[Mechanism Name]**: [Brief explanation of compatibility and contribution]
+...
 
-Current Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
-Current Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
-Current Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+## Suggested Methods
+1. **[Method Name]**: [Brief explanation of compatibility and contribution]
+2. **[Method Name]**: [Brief explanation of compatibility and contribution]
+...
+
+## Suggested Theoretical Frameworks
+1. **[Theory Name]**: [Brief explanation of relevance and contribution]
+2. **[Theory Name]**: [Brief explanation of relevance and contribution]
+...
+
+## Integration Strategy
+[Brief paragraph on how these components could be integrated together]
+
+## Potential Challenges
+- [Challenge 1]: [Brief description and potential mitigation]
+- [Challenge 2]: [Brief description and potential mitigation]
+...
+
+Ensure all suggestions are scientifically valid and would work well with the existing components. Provide specific reasons for each suggestion based on physical, chemical, or biological principles as appropriate.`;
+
+      case 'check-consistency':
+        return `You are an expert research assistant evaluating the consistency of a scientific concept design.
 
 TASK:
 Evaluate the consistency and compatibility of the current concept design.
 Identify any potential conflicts, gaps, or inconsistencies between the components.
 Provide recommendations for resolving any issues.
 
-FORMAT YOUR RESPONSE AS:
-## Consistency Analysis
+CURRENT CONCEPT:
+Objective: {objective}
 
-### Strengths
-- [Strength 1]
-- [Strength 2]
-...
+Current Materials: {materials}
+Current Mechanisms: {mechanisms}
+Current Methods: {methods}
+Current Theoretical Concepts: {theoretical_concepts}
 
-### Potential Issues
+FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
+
+# Consistency Analysis for {objective}
+
+## Strengths
+- [List the strengths and compatible aspects of the current design]
+- [Focus on synergies between materials and mechanisms]
+- [Highlight well-matched methods for the concept]
+
+## Potential Issues
 - [Issue 1]: [Description and recommendation]
 - [Issue 2]: [Description and recommendation]
 ...
 
-### Overall Assessment
-[Overall consistency assessment and recommendations]`;
-  }
+## Compatibility Matrix
 
-  /**
-   * Build prompt for generating protocol
-   */
-  private buildGenerateProtocolPrompt(conceptState?: ConceptDesignState): string {
-    if (!conceptState) return "Please generate an experimental protocol for a new concept.";
-    
-    return `You are an expert research scientist creating an experimental protocol for a novel concept.
+| Component | Compatible With | Potential Conflicts |
+|-----------|----------------|---------------------|
+| [Material/Mechanism] | [List compatible components] | [List potential conflicts] |
+| ... | ... | ... |
 
-CURRENT CONCEPT:
-Objective: ${conceptState.objective || 'Not specified'}
+## Overall Assessment
+[Overall consistency assessment and recommendations]
 
-Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
-Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
-Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
+## Next Steps
+1. [Specific action to improve consistency]
+2. [Another specific action]
+...
+
+Remember to be specific about the scientific principles that create compatibility or conflicts between components. Cite relevant physical, chemical, or biological constraints where applicable.`;
+
+      case 'generate-protocol-outline':
+        return `You are an expert research scientist creating an experimental protocol for a novel concept.
 
 TASK:
 Generate a comprehensive experimental protocol to validate this concept.
 Include sections for materials, equipment, procedures, measurements, and analysis.
 Provide specific, actionable steps that would allow researchers to test and validate the concept.
 
+CURRENT CONCEPT:
+Objective: {objective}
+
+Materials: {materials}
+Mechanisms: {mechanisms}
+Methods: {methods}
+Theoretical Concepts: {theoretical_concepts}
+
 FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
-# Experimental Protocol: [Concept Name]
+
+# Experimental Protocol: {objective}
 
 ## 1. Objective
-[Clear statement of the protocol's purpose]
+[Clear statement of the protocol's purpose, including specific hypotheses to be tested]
 
 ## 2. Materials and Equipment
-[List of required materials and equipment]
 
-## 3. Preparation
-[Preparation steps]
+### 2.1 Materials
+- [Material 1]: [Specifications, quantity, source/vendor if applicable]
+- [Material 2]: [Specifications, quantity, source/vendor if applicable]
+...
 
-## 4. Experimental Procedure
-[Detailed step-by-step procedure]
+### 2.2 Equipment
+- [Equipment 1]: [Specifications, settings]
+- [Equipment 2]: [Specifications, settings]
+...
 
-## 5. Measurements and Data Collection
-[What to measure and how]
+## 3. Safety Considerations
+- [Safety precaution 1]
+- [Safety precaution 2]
+...
 
-## 6. Analysis Methods
-[How to analyze the collected data]
+## 4. Preparation
+[Detailed preparation steps, including any solutions, samples, or setups that must be prepared before the main procedure]
 
-## 7. Expected Results
-[What results would validate the concept]
+## 5. Experimental Procedure
 
-## 8. Troubleshooting
-[Potential issues and solutions]`;
-  }
+### 5.1 [Procedure Stage 1]
+1. [Step 1]
+2. [Step 2]
+...
 
-  /**
-   * Build prompt for generating summary
-   */
-  private buildGenerateSummaryPrompt(conceptState?: ConceptDesignState): string {
-    if (!conceptState) return "Please generate a summary for a new concept.";
-    
-    return `You are an expert research scientist creating a comprehensive summary of a novel concept.
+### 5.2 [Procedure Stage 2]
+1. [Step 1]
+2. [Step 2]
+...
 
-CURRENT CONCEPT:
-Objective: ${conceptState.objective || 'Not specified'}
+## 6. Measurements and Data Collection
+- [Measurement 1]: [What to measure, how to measure it, frequency/timing]
+- [Measurement 2]: [What to measure, how to measure it, frequency/timing]
+...
 
-Materials: ${conceptState.components.materials.join(', ') || 'None specified'}
-Mechanisms: ${conceptState.components.mechanisms.join(', ') || 'None specified'}
-Methods: ${conceptState.components.methods.join(', ') || 'None specified'}
-Theoretical Concepts: ${conceptState.components.theoretical_concepts?.join(', ') || 'None specified'}
+## 7. Analysis Methods
+- [Analysis Method 1]: [Description, purpose, expected outcomes]
+- [Analysis Method 2]: [Description, purpose, expected outcomes]
+...
+
+## 8. Expected Results
+- [Expected Result 1]: [Description, how it validates the concept]
+- [Expected Result 2]: [Description, how it validates the concept]
+...
+
+## 9. Troubleshooting
+- [Potential Issue 1]: [Solution/Workaround]
+- [Potential Issue 2]: [Solution/Workaround]
+...
+
+## 10. Time Estimation
+- Total estimated time: [X hours/days]
+- [Stage 1]: [Time estimate]
+- [Stage 2]: [Time estimate]
+...
+
+## 11. References
+- [Reference 1]
+- [Reference 2]
+...
+
+Be specific about quantities, durations, temperatures, and other parameters. Include control experiments where appropriate. Ensure the protocol is reproducible by other researchers.`;
+
+      case 'generate-concept-summary':
+        return `You are an expert research scientist creating a comprehensive summary of a novel concept.
 
 TASK:
 Generate a comprehensive summary of this concept.
 Include an abstract, component analysis, technical specifications, and recommendations.
 Provide a clear, concise overview that would help researchers understand the concept.
 
+CURRENT CONCEPT:
+Objective: {objective}
+
+Materials: {materials}
+Mechanisms: {mechanisms}
+Methods: {methods}
+Theoretical Concepts: {theoretical_concepts}
+
 FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
-# Concept Summary: [Concept Name]
+
+# Concept Summary: {objective}
 
 ## Abstract
-[Brief overview of the concept]
+[Brief overview of the concept in 3-5 sentences, explaining its purpose, key components, and potential significance]
 
 ## Component Analysis
-[Analysis of the materials, mechanisms, and methods]
+
+### Materials
+- **[Material 1]**: [Brief description of role and properties]
+- **[Material 2]**: [Brief description of role and properties]
+...
+
+### Mechanisms
+- **[Mechanism 1]**: [Brief description of function and importance]
+- **[Mechanism 2]**: [Brief description of function and importance]
+...
+
+### Methods
+- **[Method 1]**: [Brief description of application and purpose]
+- **[Method 2]**: [Brief description of application and purpose]
+...
+
+### Theoretical Foundation
+- **[Theory 1]**: [Brief description of relevance]
+- **[Theory 2]**: [Brief description of relevance]
+...
 
 ## Technical Specifications
-[Technical details and parameters]
+
+### System Architecture
+[Description of how components interact and are organized]
+
+### Operational Parameters
+[Key parameters, constraints, and performance metrics]
+
+### Interface Characteristics
+[How the system interacts with its environment or users]
 
 ## Recommendations
-[Suggestions for further development or improvement]`;
-  }
 
-  /**
-   * Build prompt for exploratory analysis
-   */
-  private buildExploratoryAnalysisPrompt(
-    payload?: AgentActionPayload,
-    graphData?: { nodes: NodeObject[] }
-  ): string {
-    const targetId = payload?.targetId || 'current concept';
-    const targetNode = graphData?.nodes.find(n => n.id === targetId);
-    
-    return `You are an expert research assistant conducting an exploratory analysis of a knowledge graph.
+### Next Steps
+- [Specific recommendation for further development]
+- [Another specific recommendation]
+...
 
-TARGET NODE:
-ID: ${targetId}
-Type: ${targetNode?.type || 'Unknown'}
-Label: ${targetNode?.label || targetId}
-Description: ${targetNode?.description || 'No description available'}
+### Research Directions
+- [Promising research direction]
+- [Another promising research direction]
+...
+
+## Keywords
+[List 5-10 keywords that capture the essence of the concept]
+
+Ensure the summary is scientifically accurate, technically precise, and accessible to researchers in the field. Use concrete examples where possible and avoid vague generalizations.`;
+
+      case 'find-analogies':
+        return `You are an expert research assistant helping to identify analogies for a scientific concept.
+
+TASK:
+Identify 3-5 analogous systems or concepts from different domains that share similar principles, structures, or behaviors with the current concept.
+For each analogy, explain the similarities and how insights from the analogous system might inform the current concept.
+Focus on deep structural analogies rather than superficial similarities.
+
+CURRENT CONCEPT:
+Objective: {objective}
+
+Current Materials: {materials}
+Current Mechanisms: {mechanisms}
+Current Methods: {methods}
+Current Theoretical Concepts: {theoretical_concepts}
+
+FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
+
+# Analogical Analysis for {objective}
+
+## Core Principles of Current Concept
+- [Identify 3-5 fundamental principles/mechanisms of the current concept]
+- [These will serve as the basis for finding analogies]
+
+## Analogous Systems
+
+### 1. [Analogy Name] (Domain: [e.g., Biology, Computing, Economics])
+**Key Similarities:**
+- [Similarity 1]
+- [Similarity 2]
+...
+
+**Potential Insights:**
+- [How this analogy could inform the current concept]
+- [Specific techniques or approaches that could be transferred]
+
+**Limitations of the Analogy:**
+- [Where the analogy breaks down]
+- [Cautions about over-extending the comparison]
+
+### 2. [Analogy Name] (Domain: [Domain])
+...
+
+### 3. [Analogy Name] (Domain: [Domain])
+...
+
+## Cross-Cutting Patterns
+[Identify patterns that appear across multiple analogies]
+
+## Recommended Applications
+1. [Specific way to apply insights from analogy 1]
+2. [Specific way to apply insights from analogy 2]
+...
+
+Focus on finding analogies that provide non-obvious insights and could lead to innovative approaches for the current concept. Consider analogies from diverse domains including biology, physics, computer science, economics, and social systems.`;
+
+      case 'launch-exploratory-analysis':
+        return `You are an expert research assistant conducting an exploratory analysis of a knowledge graph.
 
 TASK:
 Analyze the target node and identify potential knowledge gaps, research opportunities, and interesting connections.
-Suggest 2-3 specific research directions or questions that could be explored.
+Suggest 3-5 specific research directions or questions that could be explored.
+Identify patterns, anomalies, or unexplored areas in the current knowledge representation.
 
-FORMAT YOUR RESPONSE AS:
-## Exploratory Analysis
+TARGET NODE:
+ID: {targetId}
+Type: {targetNodeType}
+Label: {targetNodeLabel}
+Description: {targetNodeDescription}
 
-### Key Insights
-- [Insight 1]
+FORMAT YOUR RESPONSE AS A MARKDOWN DOCUMENT:
+
+# Exploratory Analysis: {targetNodeLabel}
+
+## Key Insights
+- [Insight 1 about the target node and its position in the knowledge graph]
 - [Insight 2]
 ...
 
-### Knowledge Gaps
-- [Gap 1]: [Description and research opportunity]
-- [Gap 2]: [Description and research opportunity]
+## Knowledge Gaps
+- **Gap 1**: [Description of the gap]
+  - *Research Opportunity*: [How this gap could be addressed]
+  - *Potential Impact*: [Why filling this gap matters]
+
+- **Gap 2**: [Description of the gap]
+  - *Research Opportunity*: [How this gap could be addressed]
+  - *Potential Impact*: [Why filling this gap matters]
 ...
 
-### Suggested Research Directions
-1. [Research direction 1]: [Description and potential impact]
-2. [Research direction 2]: [Description and potential impact]
-...`;
+## Potential Connections
+- **Connection to [Domain/Field 1]**: [Description of how the target node relates to this domain]
+- **Connection to [Domain/Field 2]**: [Description of how the target node relates to this domain]
+...
+
+## Suggested Research Directions
+1. **[Research Direction 1]**
+   - *Approach*: [Suggested methodology]
+   - *Expected Outcomes*: [What might be discovered]
+   - *Required Expertise*: [Fields or skills needed]
+
+2. **[Research Direction 2]**
+   - *Approach*: [Suggested methodology]
+   - *Expected Outcomes*: [What might be discovered]
+   - *Required Expertise*: [Fields or skills needed]
+...
+
+## Recommended Next Steps
+1. [Specific action to take]
+2. [Another specific action]
+...
+
+Provide scientifically grounded analysis with specific, actionable research directions. Focus on identifying non-obvious connections and opportunities that could lead to novel discoveries or applications.`;
+
+      default:
+        return `Please provide a response for the action: ${action}`;
+    }
   }
 
   /**

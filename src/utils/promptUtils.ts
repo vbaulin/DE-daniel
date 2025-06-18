@@ -24,35 +24,6 @@ export const loadPrompt = async (promptName: string): Promise<string> => {
 };
 
 /**
- * Save a prompt to localStorage (for development/testing)
- * 
- * @param promptName - Name of the prompt
- * @param promptText - Text of the prompt
- */
-export const savePromptToLocalStorage = (promptName: string, promptText: string): void => {
-  try {
-    localStorage.setItem(`prompt_${promptName}`, promptText);
-  } catch (error) {
-    console.error(`Error saving prompt ${promptName} to localStorage:`, error);
-  }
-};
-
-/**
- * Load a prompt from localStorage (for development/testing)
- * 
- * @param promptName - Name of the prompt
- * @returns The prompt text or null if not found
- */
-export const loadPromptFromLocalStorage = (promptName: string): string | null => {
-  try {
-    return localStorage.getItem(`prompt_${promptName}`);
-  } catch (error) {
-    console.error(`Error loading prompt ${promptName} from localStorage:`, error);
-    return null;
-  }
-};
-
-/**
  * Format a prompt with variables
  * 
  * @param promptTemplate - Template string with {variable} placeholders
@@ -65,8 +36,87 @@ export const formatPrompt = (promptTemplate: string, variables: Record<string, a
   // Replace each variable in the template
   Object.entries(variables).forEach(([key, value]) => {
     const regex = new RegExp(`\\{${key}\\}`, 'g');
-    formattedPrompt = formattedPrompt.replace(regex, String(value));
+    formattedPrompt = formattedPrompt.replace(regex, String(value || ''));
   });
   
   return formattedPrompt;
+};
+
+/**
+ * Get a list of all available prompts
+ * 
+ * @returns Promise resolving to an array of prompt names
+ */
+export const listAvailablePrompts = async (): Promise<string[]> => {
+  try {
+    // This is a simplified implementation
+    // In a real application, you might need a server endpoint to list files
+    return [
+      'check-consistency',
+      'find-analogies',
+      'generate-concept-summary',
+      'generate-protocol-outline',
+      'launch-exploratory-analysis',
+      'suggest-compatible-components'
+    ];
+  } catch (error) {
+    console.error('Error listing available prompts:', error);
+    return [];
+  }
+};
+
+/**
+ * Create a new prompt file
+ * 
+ * @param promptName - Name of the prompt
+ * @param promptContent - Content of the prompt
+ * @returns Promise resolving to success status
+ */
+export const createPrompt = async (promptName: string, promptContent: string): Promise<boolean> => {
+  try {
+    // This would require a server endpoint in a real application
+    // For now, we'll just simulate success
+    console.log(`Creating prompt ${promptName} (simulated)`);
+    return true;
+  } catch (error) {
+    console.error(`Error creating prompt ${promptName}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Update an existing prompt file
+ * 
+ * @param promptName - Name of the prompt
+ * @param promptContent - New content of the prompt
+ * @returns Promise resolving to success status
+ */
+export const updatePrompt = async (promptName: string, promptContent: string): Promise<boolean> => {
+  try {
+    // This would require a server endpoint in a real application
+    // For now, we'll just simulate success
+    console.log(`Updating prompt ${promptName} (simulated)`);
+    return true;
+  } catch (error) {
+    console.error(`Error updating prompt ${promptName}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Delete a prompt file
+ * 
+ * @param promptName - Name of the prompt to delete
+ * @returns Promise resolving to success status
+ */
+export const deletePrompt = async (promptName: string): Promise<boolean> => {
+  try {
+    // This would require a server endpoint in a real application
+    // For now, we'll just simulate success
+    console.log(`Deleting prompt ${promptName} (simulated)`);
+    return true;
+  } catch (error) {
+    console.error(`Error deleting prompt ${promptName}:`, error);
+    return false;
+  }
 };
