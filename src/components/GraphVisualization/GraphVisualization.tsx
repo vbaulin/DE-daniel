@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import * as d3 from 'd3';
 import { cloneDeep } from 'lodash';
 import { GraphData, NodeObject, LinkObject as CNMLinkObject, ConceptDesignState, NodeType, EdgeType } from '../../types';
-import { getNeighbors } from '../../utils/graphUtils';
+import { getNeighbors, forceCluster } from '../../utils/graphUtils';
 
 interface GraphNode extends NodeObject {
   x?: number;
