@@ -943,18 +943,22 @@ Provide scientifically grounded analysis with specific, actionable research dire
     // Replace concept state variables
     if (conceptState) {
       prompt = prompt.replace(/{objective}/g, conceptState.objective || 'Not specified');
-      prompt = prompt.replace(/{materials}/g, conceptState.materials.join(', ') || 'None selected');
-      prompt = prompt.replace(/{mechanisms}/g, conceptState.mechanisms.join(', ') || 'None selected');
-      prompt = prompt.replace(/{methods}/g, conceptState.methods.join(', ') || 'None selected');
-      prompt = prompt.replace(/{theoretical_concepts}/g, conceptState.theoreticalConcepts.join(', ') || 'None selected');
+      prompt = prompt.replace(/{materials}/g, conceptState.components.materials.join(', ') || 'None selected');
+      prompt = prompt.replace(/{mechanisms}/g, conceptState.components.mechanisms.join(', ') || 'None selected');
+      prompt = prompt.replace(/{methods}/g, conceptState.components.methods.join(', ') || 'None selected');
+      prompt = prompt.replace(/{theoretical_concepts}/g, conceptState.components.theoretical_concepts.join(', ') || 'None selected');
     }
     
     // Replace payload variables for exploratory analysis
     if (action === 'launch-exploratory-analysis' && payload) {
       prompt = prompt.replace(/{targetId}/g, payload.targetId || 'Unknown');
-      prompt = prompt.replace(/{targetNodeType}/g, payload.targetNodeType || 'Unknown');
-      prompt = prompt.replace(/{targetNodeLabel}/g, payload.targetNodeLabel || 'Unknown');
-      prompt = prompt.replace(/{targetNodeDescription}/g, payload.targetNodeDescription || 'No description available');
+      
+      // Find the target node in the graph data
+      const targetNode = graphData?.nodes.find(n => n.id === payload.targetId);
+      
+      prompt = prompt.replace(/{targetNodeType}/g, targetNode?.type || payload.targetNodeType || 'Unknown');
+      prompt = prompt.replace(/{targetNodeLabel}/g, targetNode?.label || payload.targetNodeLabel || 'Unknown');
+      prompt = prompt.replace(/{targetNodeDescription}/g, targetNode?.description || payload.targetNodeDescription || 'No description available');
     }
     
     return prompt;
