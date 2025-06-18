@@ -19,6 +19,7 @@ import ContextPanel from './components/ContextPanel/ContextPanel';
 import KnowledgeBrowserSidebar from './components/KnowledgeBrowserSidebar';
 import BreadcrumbPanel from './components/BreadcrumbPanel';
 import ErrorBoundary from './components/ErrorBoundary';
+import LLMResultModal from './components/Modals/LLMResultModal';
 
 // Hooks and utilities
 import { useAppState } from './hooks/useAppState';
@@ -53,7 +54,8 @@ function App() {
     updateObjective,
     updateComponentSelection,
     updateCssField,
-    isContextPanelVisible
+    isContextPanelVisible,
+    llmResultModalState
   } = useAppState();
 
   // Add new state for graph visualization controls
@@ -311,6 +313,22 @@ function App() {
               onClose={actions.togglePDFUploader} 
               onFileProcessed={(parsedData) => actions.triggerAgent('integrate-data', parsedData)} 
               onTriggerAgent={actions.triggerAgent} 
+            />
+          </ErrorBoundary>
+        )}
+        
+        {/* LLM Result Modal */}
+        {llmResultModalState.show && (
+          <ErrorBoundary componentName="LLMResultModal">
+            <LLMResultModal
+              darkMode={state.darkMode}
+              title={llmResultModalState.title}
+              content={llmResultModalState.content}
+              isLoading={llmResultModalState.isLoading}
+              onClose={actions.closeLLMResultModal}
+              allNodes={graphData.nodes}
+              onSelectNode={actions.handleNodeSelect}
+              onPaperClick={(citationKey) => actions.triggerAgent('open-publication', { key: citationKey })}
             />
           </ErrorBoundary>
         )}

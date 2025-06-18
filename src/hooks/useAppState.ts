@@ -33,6 +33,12 @@ interface AppState {
   showPDFUploader: boolean;
   isBrowserSidebarOpen: boolean;
   
+  // LLM Result Modal State
+  showLLMResultModal: boolean;
+  llmResultTitle: string;
+  llmResultContent: string;
+  isLLMResultLoading: boolean;
+  
   // Search Filter States
   lastFilterCounts: { nodes: number; links: number } | null;
   pendingSearchFilterCounts: { nodes: number; links: number } | null;
@@ -104,6 +110,12 @@ export const useAppState = () => {
     showParticles: false,
     showPDFUploader: false,
     isBrowserSidebarOpen: true,
+
+    // LLM Result Modal State
+    showLLMResultModal: false,
+    llmResultTitle: '',
+    llmResultContent: '',
+    isLLMResultLoading: false,
     
     // Search Filter States
     lastFilterCounts: null,
@@ -437,6 +449,33 @@ export const useAppState = () => {
     }
   }, [state.pendingSearchFilterCounts, state.searchQuery, state.agentMessages]);
 
+  // Handle LLM result actions from agent messages
+  useEffect(() => {
+    const latestMessage = state.agentMessages[state.agentMessages.length - 1];
+    if (!latestMessage?.action) return;
+
+    if (latestMessage.action.type === 'view-llm-result') {
+      const payload = latestMessage.action.payload;
+      
+      if (payload.protocolGenerated) {
+        actions.showLLMResult(
+          payload.title || 'Protocol',
+          payload.protocol
+        );
+      } else if (payload.summaryGenerated) {
+        actions.showLLMResult(
+          payload.title || 'Summary',
+          payload.fullSummary
+        );
+      } else if (payload.content) {
+        actions.showLLMResult(
+          payload.title || 'Analysis',
+          payload.content
+        );
+      }
+    }
+  }, [state.agentMessages]);
+
   // Create actions object
   const actions: AppActions = {
     // UI Actions
@@ -453,6 +492,23 @@ export const useAppState = () => {
     toggleParticles: () => setState(prev => ({ ...prev, showParticles: !prev.showParticles })),
     togglePDFUploader: () => setState(prev => ({ ...prev, showPDFUploader: !prev.showPDFUploader })),
     toggleBrowserSidebar: () => setState(prev => ({ ...prev, isBrowserSidebarOpen: !prev.isBrowserSidebarOpen })),
+    
+    // LLM Result Modal Actions
+    showLLMResult: (title: string, content: string) => setState(prev => ({ 
+      ...prev, 
+      showLLMResultModal: true, 
+      llmResultTitle: title, 
+      llmResultContent: content,
+      isLLMResultLoading: false
+    })),
+    startLLMLoading: (title: string) => setState(prev => ({ 
+      ...prev, 
+      showLLMResultModal: true, 
+      llmResultTitle: title, 
+      llmResultContent: '',
+      isLLMResultLoading: true
+    })),
+    closeLLMResultModal: () => setState(prev => ({ ...prev, showLLMResultModal: false })),
     
     // Agent Actions
     addAgentMessage,
@@ -536,6 +592,14 @@ export const useAppState = () => {
     setGraphData,
     
     // Computed values
-    isContextPanelVisible: state.activeMode === 'create' || state.selectedNodeId !== null
+    isContextPanelVisible: state.activeMode === 'create' || state.selectedNodeId !== null,
+    
+    // LLM Result Modal State
+    llmResultModalState: {
+      show: state.showLLMResultModal,
+      title: state.llmResultTitle,
+      content: state.llmResultContent,
+      isLoading: state.isLLMResultLoading
+    }
   };
 }; 
