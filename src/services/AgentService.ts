@@ -929,60 +929,213 @@ Provide scientifically grounded analysis with specific, actionable research dire
   }
 
   /**
-   * Load prompt from file and replace variables
+   * Replace variables in prompt template
    */
-  private async loadPromptFromFile(
+  private replacePromptVariables(
+    promptTemplate: string,
     action: string,
     payload?: AgentActionPayload,
     conceptState?: ConceptDesignState,
     graphData?: { nodes: NodeObject[] }
-  ): Promise<string> {
-    try {
-      // Determine which prompt file to load
-      let promptFileName = '';
-      switch (action) {
-        case 'suggest-compatible-components':
-          promptFileName = 'suggest-compatible-components';
-          break;
-        case 'find-analogies':
-          promptFileName = 'find-analogies';
-          break;
-        case 'check-consistency':
-          promptFileName = 'check-consistency';
-          break;
-        case 'generate-protocol-outline':
-          promptFileName = 'generate-protocol-outline';
-          break;
-        case 'generate-concept-summary':
-          promptFileName = 'generate-concept-summary';
-          break;
-        case 'launch-exploratory-analysis':
-          promptFileName = 'launch-exploratory-analysis';
-          break;
-        default:
-          return `Please provide a response for the action: ${action}`;
-      }
-      
-      // Try to load the prompt from file
-      let promptTemplate = '';
-      try {
-        const response = await fetch(`/prompts/${promptFileName}.txt`);
-        if (response.ok) {
-          promptTemplate = await response.text();
-        } else {
-          console.warn(`Failed to load prompt file: ${promptFileName}.txt`);
-          // Fall back to built-in prompts
-          promptTemplate = this.getBuiltInPrompt(action);
-        }
-      } catch (error) {
-        console.error(`Error loading prompt file: ${error}`);
-        // Fall back to built-in prompts
-        promptTemplate = this.getBuiltInPrompt(action);
-      }
-      
-      // Replace variables in the prompt
-      return this.replacePromptVariables(promptTemplate, action, payload, conceptState
-      )
+  ): string {
+    let prompt = promptTemplate;
+    
+    // Replace concept state variables
+    if (conceptState) {
+      prompt = prompt.replace(/{objective}/g, conceptState.objective || 'Not specified');
+      prompt = prompt.replace(/{materials}/g, conceptState.materials.join(', ') || 'None selected');
+      prompt = prompt.replace(/{mechanisms}/g, conceptState.mechanisms.join(', ') || 'None selected');
+      prompt = prompt.replace(/{methods}/g, conceptState.methods.join(', ') || 'None selected');
+      prompt = prompt.replace(/{theoretical_concepts}/g, conceptState.theoreticalConcepts.join(', ') || 'None selected');
     }
+    
+    // Replace payload variables for exploratory analysis
+    if (action === 'launch-exploratory-analysis' && payload) {
+      prompt = prompt.replace(/{targetId}/g, payload.targetId || 'Unknown');
+      prompt = prompt.replace(/{targetNodeType}/g, payload.targetNodeType || 'Unknown');
+      prompt = prompt.replace(/{targetNodeLabel}/g, payload.targetNodeLabel || 'Unknown');
+      prompt = prompt.replace(/{targetNodeDescription}/g, payload.targetNodeDescription || 'No description available');
+    }
+    
+    return prompt;
+  }
+
+  /**
+   * Get relevant knowledge excerpt for the action
+   */
+  private getRelevantKnowledgeExcerpt(action: string, conceptState?: ConceptDesignState): string {
+    // For now, return a subset of the knowledge base
+    // In the future, this could be more sophisticated with semantic search
+    const maxLength = 2000; // Limit knowledge context to avoid token limits
+    
+    if (this.knowledgeBase.length <= maxLength) {
+      return this.knowledgeBase;
+    }
+    
+    // Return first part of knowledge base with truncation notice
+    return this.knowledgeBase.substring(0, maxLength) + '\n\n[Knowledge base truncated for brevity...]';
+  }
+
+  /**
+   * Get agent name for action
+   */
+  private getAgentForAction(action: string): string {
+    switch (action) {
+      case 'suggest-compatible-components':
+        return 'Component Advisor';
+      case 'find-analogies':
+        return 'Analogy Finder';
+      case 'check-consistency':
+        return 'Consistency Checker';
+      case 'generate-protocol-outline':
+        return 'Protocol Generator';
+      case 'generate-concept-summary':
+        return 'Summary Generator';
+      case 'launch-exploratory-analysis':
+        return 'Knowledge Explorer';
+      default:
+        return 'Research Assistant';
+    }
+  }
+
+  // Placeholder methods for non-LLM actions
+  private handleSearchGraph(payload?: AgentActionPayload): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Search Agent',
+        type: 'info',
+        content: `Searching knowledge graph for: ${payload?.query || 'unknown query'}`
+      }
+    };
+  }
+
+  private handleInitiateConceptFromSelection(payload?: AgentActionPayload, graphData?: { nodes: NodeObject[] }): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Concept Initiator',
+        type: 'info',
+        content: `Initiating new concept from selected node: ${payload?.nodeId || 'unknown'}`
+      }
+    };
+  }
+
+  private handleInitiateConceptFromGoal(payload?: AgentActionPayload): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Goal Analyzer',
+        type: 'info',
+        content: `Analyzing goal: ${payload?.goalText || 'No goal specified'}`
+      }
+    };
+  }
+
+  private handleExploratoryAnalysis(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Knowledge Explorer',
+        type: 'info',
+        content: `Launching exploratory analysis...`
+      }
+    };
+  }
+
+  private handleAddComponent(payload?: AgentActionPayload): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Component Manager',
+        type: 'info',
+        content: `Adding component: ${payload?.componentId || 'unknown'}`
+      }
+    };
+  }
+
+  private handleSuggestComponents(conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Component Advisor',
+        type: 'info',
+        content: `Analyzing current design to suggest compatible components...`
+      }
+    };
+  }
+
+  private handleFindAnalogies(conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Analogy Finder',
+        type: 'info',
+        content: `Searching for analogous concepts and patterns...`
+      }
+    };
+  }
+
+  private handleCheckConsistency(conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Consistency Checker',
+        type: 'info',
+        content: `Validating design consistency and compatibility...`
+      }
+    };
+  }
+
+  private handleGenerateProtocol(conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Protocol Generator',
+        type: 'info',
+        content: `Generating experimental protocol outline...`
+      }
+    };
+  }
+
+  private handleGenerateSummary(conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Summary Generator',
+        type: 'info',
+        content: `Creating comprehensive concept summary...`
+      }
+    };
+  }
+
+  private handlePackageArtifact(conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Artifact Packager',
+        type: 'info',
+        content: `Packaging knowledge artifact for concept: ${conceptState?.objective || 'Unknown'}`
+      }
+    };
+  }
+
+  private handleDeliverProtocol(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Protocol Deliverer',
+        type: 'success',
+        content: `Protocol delivered for concept: ${conceptState?.objective || 'Unknown'}`
+      }
+    };
+  }
+
+  private handleDeliverSummary(payload?: AgentActionPayload, conceptState?: ConceptDesignState): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Summary Deliverer',
+        type: 'success',
+        content: `Summary delivered for concept: ${conceptState?.objective || 'Unknown'}`
+      }
+    };
+  }
+
+  private handleGenericAction(action: string, payload?: AgentActionPayload): AgentResponse {
+    return {
+      message: {
+        sourceAgent: 'Generic Agent',
+        type: 'info',
+        content: `Handling action: ${action}`
+      }
+    };
   }
 }
